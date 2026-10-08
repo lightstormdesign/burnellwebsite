@@ -1,0 +1,549 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Burnell palette — white, gold, tan, slate/stream blue, black + earth
+     tones (form). Variable names kept from the template (--sm-*) so every
+     component picks these up without edits. */
+  --sm-black: #060707;
+  --sm-black-2: #0b0d0d;
+  --sm-black-3: #121513;
+  --sm-brown-deep: #2a2116;
+  --sm-blue-deep: #16232c;
+  --sm-brown-secondary: #7a5634;
+  --sm-gold: #d4b06a;
+  --sm-gold-accent: #b8935a;
+  --sm-gold-light: #ecd9ad;
+  --sm-cream: #cdb48c;
+  --sm-turquoise: #7fa3b5;
+  --sm-text: #f6f2ea;
+  --sm-text-soft: #bdb3a3;
+  --sm-text-muted: #7d7568;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--sm-black);
+}
+
+body {
+  margin: 0;
+  background: var(--sm-black);
+  color: var(--sm-text);
+  font-family: "Outfit", -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(214, 179, 101, 0.28);
+  color: #fff;
+}
+
+/* Fonts — Marcellus is the primary display face (elegant, grounded, opulent per
+   the form). Marcellus has no weight below 400; font-heading-light is an escape hatch for the rare
+   spot that still wants an airy light serif (Cormorant at 300). */
+.font-display {
+  font-family: "Marcellus", serif;
+}
+.font-heading-light {
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 300;
+}
+.font-body {
+  font-family: "Outfit", sans-serif;
+}
+.font-accent {
+  font-family: "Cormorant Garamond", serif;
+}
+
+/* Overline label */
+.overline {
+  font-family: "Marcellus", serif;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  font-size: 0.72rem;
+  color: var(--sm-gold);
+}
+
+/* Gold gradient text */
+.text-gold-grad {
+  background: linear-gradient(180deg, var(--sm-gold-light) 0%, var(--sm-gold) 55%, var(--sm-brown-secondary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Metallic white/gray gradient text — used for the Hero tagline so the
+   gold/white/gold rhythm reads clearly against the logo and bio. */
+.text-metallic-grad {
+  background: linear-gradient(180deg, #ffffff 0%, #d8d8d8 45%, #9a9a9a 75%, #c9c9c9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Understated metallic gold: champagne highlight -> warm bronze shadow */
+.text-gold-metallic {
+  background: linear-gradient(180deg, #f6e7c4 0%, #e8cf9a 34%, #c8a15f 66%, #8f6f3e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 1.5px rgba(43, 31, 20, 0.55));
+}
+
+.gold-glow {
+  filter: drop-shadow(0 0 22px rgba(214, 179, 101, 0.35));
+}
+
+/* Legible text over full-opacity video (no background darkening) */
+.text-legible {
+  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.75), 0 1px 6px rgba(0, 0, 0, 0.65);
+}
+
+/* Starfield background */
+.starfield {
+  position: relative;
+  background-color: var(--sm-black);
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1.5px 1.5px at 70% 60%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(2px 2px at 40% 80%, rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(1.5px 1.5px at 85% 15%, rgba(255, 255, 255, 0.65), transparent),
+    radial-gradient(1.5px 1.5px at 10% 70%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(2px 2px at 55% 25%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(1px 1px at 30% 10%, rgba(214, 179, 101, 0.7), transparent),
+    radial-gradient(1px 1px at 90% 45%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1.5px 1.5px at 5% 45%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 60% 90%, rgba(214, 179, 101, 0.6), transparent),
+    radial-gradient(1px 1px at 95% 80%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 45% 50%, rgba(255, 255, 255, 0.5), transparent);
+  background-repeat: repeat;
+  background-size: 420px 420px;
+}
+
+/* Twinkling stars — two overlaid star layers at different positions,
+   twinkling at different speeds, so the field reads as gently, unevenly
+   alive rather than a single uniform pulse. No movement, low amplitude. */
+.starfield::before,
+.starfield::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: repeat;
+  background-size: 420px 420px;
+}
+.starfield::before {
+  background-image:
+    radial-gradient(1px 1px at 12% 48%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(1.5px 1.5px at 62% 12%, rgba(214, 179, 101, 0.7), transparent),
+    radial-gradient(1px 1px at 38% 88%, rgba(255, 255, 255, 0.65), transparent),
+    radial-gradient(1px 1px at 78% 55%, rgba(255, 255, 255, 0.6), transparent);
+  animation: twinkle 7s ease-in-out infinite;
+  /* Cursor-parallax: drifts opposite the wand (--wand-ndx/ndy, published by
+     MagicCursor.jsx every frame, normalized -1..1 from viewport center) for
+     a sense of depth — background recedes as the wand approaches an edge.
+     Falls back to 0 (no movement) wherever the wand isn't present. */
+  transform: translate3d(calc(var(--wand-ndx, 0) * -9px), calc(var(--wand-ndy, 0) * -7px), 0);
+}
+.starfield::after {
+  background-image:
+    radial-gradient(1px 1px at 25% 22%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 88% 68%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 50% 92%, rgba(214, 179, 101, 0.65), transparent);
+  animation: twinkle 9.5s ease-in-out 1.5s infinite;
+  transform: translate3d(calc(var(--wand-ndx, 0) * -5px), calc(var(--wand-ndy, 0) * -4px), 0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .starfield::before,
+  .starfield::after {
+    transform: none !important;
+  }
+}
+
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.05;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* Hairline divider */
+.hairline {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(214, 179, 101, 0.4),
+    transparent
+  );
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes scroll-cue {
+  0% { transform: translateY(0); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: translateY(-14px); opacity: 0; }
+}
+
+/* Album page tap indicator: approaches from the right with a zoom-in, then
+   taps repeatedly before resetting for the next loop. */
+@keyframes tap-approach {
+  0% { transform: translateX(28px) scale(0.8); opacity: 0; }
+  18% { transform: translateX(0) scale(1.2); opacity: 1; }
+  32% { transform: translateX(0) scale(0.92); }
+  44% { transform: translateX(0) scale(1.08); }
+  56% { transform: translateX(0) scale(0.92); }
+  68% { transform: translateX(0) scale(1.08); }
+  84% { transform: translateX(0) scale(1); opacity: 1; }
+  100% { transform: translateX(28px) scale(0.8); opacity: 0; }
+}
+.animate-tap-approach {
+  animation: tap-approach 2.6s ease-in-out infinite;
+}
+
+@keyframes drift-up {
+  0%, 100% { transform: translateY(0); opacity: 0.82; }
+  50% { transform: translateY(-7px); opacity: 1; }
+}
+.animate-drift-up {
+  animation: drift-up 2.6s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.025); }
+}
+.animate-breathe {
+  animation: breathe 4.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Wand cursor (MagicCursor.jsx: rod, sparkle trail, constellation trail,
+   magnetism) is retired — kept in that file, unused, as a reference/backup.
+   .has-magic-cursor's `cursor: none` rule is gone with it: the replacement
+   (GlowCursor.jsx) deliberately leaves the native OS cursor visible. */
+
+/* Glow cursor (GlowCursor.jsx) — "basically a normal mouse, subtly
+   glowing": just a soft light trailing the real (native, still-visible)
+   cursor — no visible dot/shape, box-shadow only (background: transparent
+   still gives the shadow a box to project from). Brightens slightly over
+   anything clickable via .glow-cursor--active, same DOM-semantic hover
+   check the wand used, for a hint of affordance without decoration. */
+.glow-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  margin-top: -4.5px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 9px 3px rgba(214, 179, 101, 0.55), 0 0 18px 7px rgba(214, 179, 101, 0.22);
+  opacity: 0.85;
+  transition: box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.glow-cursor--active {
+  box-shadow: 0 0 12px 4px rgba(74, 157, 171, 0.6), 0 0 22px 9px rgba(74, 157, 171, 0.28);
+  opacity: 1;
+}
+
+.animate-float-slow {
+  animation: float-slow 7s ease-in-out infinite;
+}
+
+/* Portal depth-fx: god-ray rotation (CinematicExperience.jsx). Isolated to
+   its own inner div so it doesn't fight the parent's Tailwind translate
+   transform (both would otherwise write to the same `transform` property). */
+@keyframes godray-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .godray-layer {
+    animation: none !important;
+  }
+}
+
+/* Sacred geometry field (SacredGeometryField.jsx) — five individually-sized
+   flowers (four corners + center), each spinning slowly and independently
+   (alternating direction, staggered duration per FlowerCluster's inline
+   style) rather than one giant shared rotation, so the corners don't read as
+   mechanically synchronized. Ambient layer: barely-there, present on every
+   device. Reveal layer: hidden below md (no wand there to reveal it with);
+   on desktop it's only ever visible where the mask circle is (see
+   MagicCursor.jsx's --wand-mx/--wand-my) — the mask itself sits at
+   (-9999px,-9999px) until a real wand is present, since MagicCursor only
+   publishes those vars after confirming a fine pointer. */
+@keyframes sacred-geometry-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.sacred-geometry-spin {
+  animation-name: sacred-geometry-rotate;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.sacred-geometry-reveal {
+  mix-blend-mode: screen;
+  /* Was 190px site-wide, then 95px Home-only (a --sacred-reveal-radius
+     override); now 95px is the default everywhere, so the override was
+     redundant and got removed — see CinematicExperience.jsx. */
+  -webkit-mask-image: radial-gradient(circle 95px at var(--wand-mx, -9999px) var(--wand-my, -9999px), #000 0%, #000 55%, transparent 100%);
+  mask-image: radial-gradient(circle 95px at var(--wand-mx, -9999px) var(--wand-my, -9999px), #000 0%, #000 55%, transparent 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sacred-geometry-spin {
+    animation: none !important;
+  }
+}
+
+/* Portal-fx intensity — CinematicExperience.jsx publishes
+   --portal-fx-intensity on <html> as the Home page's scroll progress moves
+   through the second half of the Portal->Hero transition: 1 through the
+   first half, ramping to 0 by the time the transition video itself fades
+   out, so the whole "wand lights up the world" system (world-dim +
+   sacred-geometry reveal) recedes as you leave the Portal rather than
+   persisting into Hero. Cleared on unmount (leaving the Home page), so the
+   fallback of 1 (full effect) is what every other page always sees. */
+.sacred-geometry-portal-fx {
+  opacity: var(--portal-fx-intensity, 1);
+}
+
+/* World-dim (WorldDim.jsx) — "the wand lights up the world": everything
+   behind this fixed scrim reads 25% dimmer + a 10% black wash, EXCEPT in a
+   circle around the wand, where the mask cuts a hole back to the scrim's
+   own transparent center — i.e. original brightness/opacity restored right
+   where the wand is. backdrop-filter (not a filter on the content itself)
+   is what makes the brightness reduction reversible by masking: the content
+   is never actually touched, only what's rendered on top of it is. Desktop-
+   only (hidden below md — same reasoning as .sacred-geometry-reveal: no
+   wand on touch devices to light anything up with), and sits above ordinary
+   page content (nav included, z-50) but below the wand's own canvas/rod
+   (z-[9998]/[9999]) so the wand is never dimmed by its own effect.
+
+   Performance note: backdrop-filter's actual strength is a FIXED value
+   (brightness(0.75)), never driven by calc(var(...)) — changing a filter's
+   own numeric value forces the browser to redo the backdrop blur/brightness
+   sample on every change, which is expensive to do on every scroll tick
+   during the Portal transition (this is what was making that scroll feel
+   slower after --portal-fx-intensity was added). The intensity fade is
+   applied as plain `opacity` on the whole element instead — a cheap,
+   compositor-only operation — so backdrop-filter is computed once and left
+   alone; fading the element to transparent reads as the same "world
+   undimmed" result. */
+.world-dim {
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: brightness(0.75);
+  -webkit-backdrop-filter: brightness(0.75);
+  -webkit-mask-image: radial-gradient(circle 240px at var(--wand-mx, -9999px) var(--wand-my, -9999px), transparent 0%, transparent 55%, black 100%);
+  mask-image: radial-gradient(circle 240px at var(--wand-mx, -9999px) var(--wand-my, -9999px), transparent 0%, transparent 55%, black 100%);
+  opacity: var(--portal-fx-intensity, 1);
+}
+
+/* Secret Portal threshold (SecretThreshold.jsx) — a conic-gradient pie that
+   fills from 0 to 360deg as --charge goes 0 to 1 (set imperatively, no
+   re-render), so holding the wand over the mandala visibly "charges" it.
+   The flash is a quick radial bloom fired once on unlock via a class swap,
+   not a permanent animation — it plays once and holds at its end state. */
+.secret-threshold-ring {
+  --charge: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: conic-gradient(var(--sm-gold-light) calc(var(--charge) * 360deg), rgba(232, 207, 154, 0.08) 0deg);
+  opacity: calc(0.35 + var(--charge) * 0.6);
+  filter: blur(0.4px) drop-shadow(0 0 calc(var(--charge) * 14px) rgba(214, 179, 101, 0.6));
+  transition: opacity 0.15s linear;
+}
+.secret-threshold-flash {
+  background: radial-gradient(circle at var(--wand-mx, 50%) var(--wand-my, 50%), rgba(255, 255, 255, 0.9) 0%, rgba(232, 207, 154, 0.5) 25%, transparent 70%);
+  opacity: 0;
+}
+.secret-threshold-flash--active {
+  animation: secret-threshold-bloom 0.9s ease-out forwards;
+}
+@keyframes secret-threshold-bloom {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Extremely slow, barely-perceptible zoom for static background photos —
+   quiet motion on otherwise-still images, not a noticeable "effect". */
+@keyframes kenburns {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.03); }
+}
+.animate-kenburns {
+  animation: kenburns 75s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Very slow, low-amplitude breathing glow — for primary CTAs and the
+   Community signup box. Subtle enough that it should be felt, not noticed. */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(214, 179, 101, 0.12); }
+  50% { box-shadow: 0 0 22px rgba(214, 179, 101, 0.3); }
+}
+.animate-glow-pulse {
+  animation: glow-pulse 5s ease-in-out infinite;
+}
+
+/* Same breathing-glow spirit, for text-only CTAs (underlined links, no box
+   to apply a box-shadow against) — a slow brightness pulse instead. */
+@keyframes text-glow-pulse {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 0 rgba(214, 179, 101, 0)); }
+  50% { filter: brightness(1.18) drop-shadow(0 0 6px rgba(214, 179, 101, 0.35)); }
+}
+.animate-text-glow-pulse {
+  animation: text-glow-pulse 5s ease-in-out infinite;
+}
+
+/* Header wordmark (mobile, non-Portal/Hero pages): a slow continuous
+   glow + gentle float, same gold drop-shadow language as text-glow-pulse
+   above, plus a small vertical drift. */
+@keyframes wordmark-float-glow {
+  0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 4px rgba(214, 179, 101, 0.25)) brightness(1); }
+  50% { transform: translateY(-3px); filter: drop-shadow(0 0 14px rgba(214, 179, 101, 0.5)) brightness(1.08); }
+}
+.animate-wordmark-float {
+  animation: wordmark-float-glow 4s ease-in-out infinite;
+}
+
+/* Soft, low-opacity haze drifting slowly sideways across a background —
+   echoes the atmospheric haze from the original Portal transition footage. */
+@keyframes haze-drift {
+  0%, 100% { transform: translateX(-4%); }
+  50% { transform: translateX(4%); }
+}
+.haze-drift {
+  position: absolute;
+  inset: -15% -25%;
+  background:
+    radial-gradient(ellipse 55% 38% at 28% 42%, rgba(255, 255, 255, 0.035) 0%, transparent 70%),
+    radial-gradient(ellipse 48% 34% at 72% 66%, rgba(214, 179, 101, 0.03) 0%, transparent 70%);
+  animation: haze-drift 110s ease-in-out infinite;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Fireflies (Fireflies.jsx) — each one glides in a straight line from its
+   start point to (--fx, --fy) over the full duration (one shared keyframe,
+   per-firefly distance/direction via CSS custom properties, same pattern as
+   the wand's cursor-parallax vars elsewhere in this file), fading in as it
+   "arrives" and out as it "leaves" rather than popping on/off mid-screen.
+   Visible for only ~45% of each loop (10%->55%) rather than nearly the
+   whole thing — real gaps of nothing on screen, so a handful of fireflies
+   reads as sparse/subtle instead of like there's a crowd of them. */
+@keyframes firefly-glide {
+  0%, 100% { transform: translate(0, 0); opacity: 0; }
+  10% { opacity: 1; }
+  45% { opacity: 1; }
+  55% { transform: translate(var(--fx), var(--fy)); opacity: 0; }
+}
+
+/* Ambient background tint cycle — for pages sharing the starfield family
+   (Music, Shop; Album deferred). Dark blue -> soft turquoise -> warm gold
+   -> deep gold -> back to dark blue, all muted/desaturated, never bright.
+   A 100s loop is close to imperceptible moment-to-moment. Different pages
+   use a negative animation-delay to start at a different phase so they
+   feel coordinated without being identical or synchronized. */
+@keyframes ambient-tint-cycle {
+  0% { background: radial-gradient(ellipse at 50% 0%, #16232c 0%, transparent 65%); }
+  25% { background: radial-gradient(ellipse at 50% 0%, #1b2a22 0%, transparent 65%); }
+  50% { background: radial-gradient(ellipse at 50% 0%, #3a2c18 0%, transparent 65%); }
+  75% { background: radial-gradient(ellipse at 50% 0%, #2b1f14 0%, transparent 65%); }
+  100% { background: radial-gradient(ellipse at 50% 0%, #16232c 0%, transparent 65%); }
+}
+.ambient-tint-cycle {
+  animation: ambient-tint-cycle 100s ease-in-out infinite;
+}
+
+/* Slow marquee ticker — genuinely slow, readable at a glance, not
+   something a visitor needs to track. The track holds the content twice
+   back-to-back and scrolls exactly half its own width for a seamless loop. */
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 55s linear infinite;
+}
+
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-160%) skewX(-18deg); opacity: 0; }
+  25% { opacity: 0.55; }
+  70% { opacity: 0; }
+  100% { transform: translateX(260%) skewX(-18deg); opacity: 0; }
+}
+.shimmer-overlay {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  pointer-events: none;
+}
+.shimmer-overlay::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.16),
+    transparent
+  );
+  animation: shimmer-sweep 2.8s ease-in-out 0.9s 1;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 9px;
+}
+::-webkit-scrollbar-track {
+  background: var(--sm-black);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--sm-brown-deep);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sm-gold-accent);
+}
+
+@layer base {
+  [data-debug-wrapper="true"] {
+    display: contents !important;
+  }
+}
