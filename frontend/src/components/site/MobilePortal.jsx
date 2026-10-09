@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { HeroContent } from "./HeroContent";
+import { HeroFrame, HERO_BG_FILTER, HERO_SCRIM } from "./HeroFrame";
 import { makeGlowSprite } from "@/utils/glowSprite";
 import { HOME_MEDIA, ARTIST_NAME, LOGO } from "@/data/site";
 
@@ -223,30 +224,35 @@ export const MobilePortal = () => {
   const portalOn = phase === "portal";
   // Hero loop: "already playing beneath it, not starting fresh at reveal" —
   // on from the moment the sequence leaves the portal phase, well before
-  // Seam 2's own fade actually uncovers it. Always full opacity, no filter.
+  // Seam 2's own fade actually uncovers it. Always full opacity; blurred and
+  // dimmed (HERO_BG_FILTER) so the illustrated HeroFrame reads in front.
   const heroLoopOn = phase !== "portal";
   const pe = (on) => (on ? "auto" : "none");
 
   return (
     <section data-testid="mobile-portal" className="relative w-full overflow-hidden" style={{ height: "100svh" }}>
-      {/* Layer 0: Hero loop background — full opacity, no blur/filter, the
-          entire time it's revealed (see Seam 2 above). */}
+      {/* Layer 0: Hero loop background — full opacity, blurred and dimmed,
+          the entire time it's revealed (see Seam 2 above). */}
       <div className="absolute inset-0 bg-black" style={{ opacity: heroLoopOn ? 1 : 0 }}>
         {heroLoopBlocked || !HOME_MEDIA.heroLoop ? (
           <>
-            <img
-              data-testid="mobile-hero-loop-poster"
-              className="animate-kenburns absolute inset-0 h-full w-full object-cover"
-              src={HOME_MEDIA.heroImageMobile}
-              alt=""
-            />
-            <div aria-hidden className="absolute inset-0 bg-black/55" />
+            <div className="absolute -inset-[4%]">
+              <img
+                data-testid="mobile-hero-loop-poster"
+                className="animate-kenburns absolute inset-0 h-full w-full object-cover"
+                style={{ filter: HERO_BG_FILTER }}
+                src={HOME_MEDIA.heroImageMobile}
+                alt=""
+              />
+            </div>
+            <div aria-hidden className="absolute inset-0" style={{ background: HERO_SCRIM }} />
           </>
         ) : (
           <video
             ref={heroLoopRef}
             data-testid="mobile-hero-loop-video"
             className="absolute inset-0 h-full w-full object-cover"
+            style={{ filter: HERO_BG_FILTER, transform: "scale(1.08)" }}
             src={HOME_MEDIA.heroLoop}
             poster={HOME_MEDIA.heroImageMobile}
             muted
@@ -354,8 +360,9 @@ export const MobilePortal = () => {
       <canvas ref={rippleCanvasRef} aria-hidden className="pointer-events-none absolute inset-0 z-[15] h-full w-full" />
 
       {/* Hero content — logo/tagline/bio/CTA, mobile variant (emblem-only
-          logo, no text wordmark, see HeroContent's `mobile` prop) */}
-      <div className="absolute inset-0 z-20" style={{ opacity: phase === "hero" ? 1 : 0, pointerEvents: pe(phase === "hero") }}>
+          logo, no text wordmark, see HeroContent's `mobile` prop). z-[32]
+          keeps it (and its announcement bubble) above the HeroFrame. */}
+      <div className="absolute inset-0 z-[32]" style={{ opacity: phase === "hero" ? 1 : 0, pointerEvents: pe(phase === "hero") }}>
         <HeroContent active={phase === "hero"} mobile />
       </div>
 
@@ -377,6 +384,12 @@ export const MobilePortal = () => {
             "linear-gradient(to bottom, #000 0%, transparent 14%, transparent 86%, #000 100%), linear-gradient(to right, rgba(0,0,0,0.35) 0%, transparent 10%, transparent 90%, rgba(0,0,0,0.35) 100%)",
         }}
       />
+
+      {/* Living illustrated frame — above the edge-fade treatment so the
+          stream isn't dimmed, still pointer-events-none throughout. */}
+      <div className="pointer-events-none absolute inset-0 z-[31]">
+        <HeroFrame active={phase === "hero"} mobile />
+      </div>
 
       {/* "Love Is the Medicine" tap track — fade in/out is baked directly
           into the file's waveform (not JS), so this is just a plain

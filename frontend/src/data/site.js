@@ -198,6 +198,16 @@ export const HOME_MEDIA = {
   audio: null,
 };
 
+// Living illustrated frame around the Hero (HeroFrame.jsx). Each piece is a
+// transparent painting plus an "-fx" mask (red = water, green = gold) that
+// tells the shader where to flow and where to catch light. Width/height are
+// the art's pixel size, used for layout before the image loads.
+export const HERO_FRAME = {
+  bottom: { src: "/burnell-frame-bottom.webp", fx: "/burnell-frame-bottom-fx.png", width: 2172, height: 458 },
+  bottomMobile: { src: "/burnell-frame-bottom-mobile.webp", fx: "/burnell-frame-bottom-mobile-fx.png", width: 1536, height: 514 },
+  side: { src: "/burnell-frame-side.webp", fx: "/burnell-frame-side-fx.png", width: 394, height: 1530 },
+};
+
 export const LOGO = "/burnell-logo.png";
 
 export const TRACKING_PIXEL_IDS = {

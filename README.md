@@ -14,6 +14,7 @@ npm start
 - **Palette/fonts**: the `--sm-*` variables in `src/index.css` are now gold, tan, slate/stream blue, and earth on black. Display font is Marcellus instead of Cinzel.
 - **Motif**: water-drop ripples replace the Flower of Life (`SacredGeometryField.jsx`).
 - **Home**: still-image mode. `HOME_MEDIA` in `site.js` has null video and audio slots, so the Portal and Hero crossfade between stills with a Ken Burns drift. Add the footage paths there and the original scroll-scrub and tap-transition choreography comes back with no code changes.
+- **Hero frame**: once you're past the portal, the Hero photo is blurred and dimmed, and an illustrated frame surrounds it: the deer-and-stream scene along the bottom and the forest waterfall up both sides (`HeroFrame.jsx`, art paths in `HERO_FRAME` in `site.js`). `LivingArt.jsx` animates each piece with WebGL: the water flows, gold light sweeps across, gold brightens near the cursor, and a click or tap sends a ring of light outward. Each art file has a matching `-fx.png` mask (red = water, green = gold) that tells the animation where to act. New art needs a new mask to match. Visitors with reduced motion turned on, or without WebGL, see the still art.
 - **Removed**: New Album / CD animation (no album out yet), Shop (merch is in-person only), Sync EPK.
 - **Pages**: Home, About, Music, Tour, Community, EPK, Contact.
 

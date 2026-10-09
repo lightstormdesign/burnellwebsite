@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { HeroContent } from "./HeroContent";
+import { HeroFrame, HERO_BG_FILTER, HERO_SCRIM } from "./HeroFrame";
 import { MobilePortal } from "./MobilePortal";
 import { StardustMist } from "./StardustMist";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -278,20 +279,26 @@ const DesktopExperience = () => {
         <div className="absolute inset-0 bg-black" style={{ opacity: heroLoopOp }}>
           {heroLoopBlocked || !HOME_MEDIA.heroLoop ? (
             <>
-              <img
-                data-testid="hero-loop-poster"
-                className="animate-kenburns absolute inset-0 h-full w-full object-cover"
-                src={HOME_MEDIA.heroImage}
-                alt=""
-              />
-              {/* Legibility scrim for the centered Hero copy over a still. */}
-              <div aria-hidden className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.6) 100%)" }} />
+              {/* Pushed back behind "smoked glass" (blur + dim) so the
+                  illustrated HeroFrame and the copy read as the foreground
+                  layer. Oversized wrapper hides the blur's soft edges. */}
+              <div className="absolute -inset-[4%]">
+                <img
+                  data-testid="hero-loop-poster"
+                  className="animate-kenburns absolute inset-0 h-full w-full object-cover"
+                  style={{ filter: HERO_BG_FILTER }}
+                  src={HOME_MEDIA.heroImage}
+                  alt=""
+                />
+              </div>
+              <div aria-hidden className="absolute inset-0" style={{ background: HERO_SCRIM }} />
             </>
           ) : (
             <video
               ref={heroLoopRef}
               data-testid="hero-loop-video"
               className="absolute inset-0 h-full w-full object-cover"
+              style={{ filter: HERO_BG_FILTER, transform: "scale(1.08)" }}
               src={HOME_MEDIA.heroLoop}
               poster={HOME_MEDIA.heroImage}
               muted
@@ -301,6 +308,13 @@ const DesktopExperience = () => {
               tabIndex={-1}
             />
           )}
+          {HOME_MEDIA.heroLoop && !heroLoopBlocked && <div aria-hidden className="absolute inset-0" style={{ background: HERO_SCRIM }} />}
+        </div>
+
+        {/* Living illustrated frame — above the Hero background, below the
+            copy. Enters with the Hero content and leaves with it. */}
+        <div className="pointer-events-none absolute inset-0 z-20">
+          <HeroFrame active={heroContentOp > 0.3} />
         </div>
 
         {/* Layer 1: Transition video — scrubbed via currentTime, fades out into the hero loop */}
