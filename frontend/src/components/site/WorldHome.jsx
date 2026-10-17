@@ -66,9 +66,23 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v));
 
 // Run cb once the video has actually put a frame on screen (not just
 // started), so whatever is covering it can be removed without a flash.
+// Whichever signal comes first: a presented frame, playback moving past
+// zero, or a short timeout. (iOS Safari doesn't always report presented
+// frames, and nothing here may ever wait on just one signal.)
+const FRAME_WAIT_MAX_MS = 150;
 const afterFirstFrame = (v, cb) => {
-  if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(() => cb());
-  else requestAnimationFrame(() => requestAnimationFrame(cb));
+  let done = false;
+  const go = () => {
+    if (done) return;
+    done = true;
+    v.removeEventListener("timeupdate", onTime);
+    clearTimeout(t);
+    cb();
+  };
+  const onTime = () => v.currentTime > 0 && go();
+  v.addEventListener("timeupdate", onTime);
+  const t = setTimeout(go, FRAME_WAIT_MAX_MS);
+  if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(go);
 };
 
 // Buffer and decode a hidden video by playing it for a moment (muted, so
@@ -530,8 +544,13 @@ export const WorldHome = () => {
         className="fixed inset-x-0 top-0 z-30 w-full object-cover"
         style={{
           height: "100lvh",
-          opacity: transitionPlaying && phase === "transition" ? 1 : 0,
-          transition: phase === "world" ? "opacity 0.7s ease" : "none",
+          // fully visible (but underneath the portal) until the world: an
+          // invisible video isn't drawn on iOS, so it would never report
+          // its first frame and the portal would never hand off
+          opacity: phase === "world" ? 0 : 1,
+          // fade out over the world only if it actually played (About can
+          // skip straight to the world without it)
+          transition: phase === "world" && transitionPlaying ? "opacity 0.7s ease" : "none",
           pointerEvents: "none",
         }}
         src={MEDIA.transition}
