@@ -83,10 +83,10 @@ const CLOUD = {
   medium: "/burnell-world-cloud-medium.webp",
   small: "/burnell-world-cloud-small.webp",
 };
-// Foreground clouds aren't in any layer: they're driven by the scroll (see
-// their poses), with only a light touch of the tilt (FREE_TILT of what the
-// nearest layer gets), so the scroll is clearly what moves them.
-const FREE_TILT = 0.25;
+// The parting clouds aren't in any layer: the scroll drives them (see
+// PARTING_CLOUDS), and the tilt moves each by its own depth.
+const CLOUD_TILT = 0.6;
+const PART_RANGE = 0.9; // how much of the descent the parting takes (slow)
 const wrap = (v, lo, hi) => lo + ((((v - lo) % (hi - lo)) + (hi - lo)) % (hi - lo));
 const FAR_FLOCK = [[0, 0], [-56, -22], [-56, 24], [-112, -42], [-110, 46]];
 const NEAR_FLOCK = [[0, 0], [95, -34], [108, 40]];
@@ -99,6 +99,17 @@ const FISH_RISE = 700; // 4x the height of the arc
 // when it breaks the surface on the way out, and on the way back in
 const FISH_SURFACE_U = (1 - Math.sqrt(1 - (4 * FISH_DEPTH) / FISH_RISE)) / 2;
 const RIPPLE_S = 1.2;
+const PARTING_CLOUDS = [
+  // far: behind the near forest, small, slow
+  { src: CLOUD.small, after: "mountains", depth: 0.35, w: 300, x0: 400, y0: 470, dir: -1, op: 0.85 },
+  { src: CLOUD.medium, after: "mountains", depth: 0.35, w: 320, x0: 580, y0: 560, dir: 1, op: 0.85 },
+  // middle distance
+  { src: CLOUD.large, after: "forest-far", depth: 0.65, w: 470, x0: 320, y0: 680, dir: -1, op: 0.9 },
+  { src: CLOUD.small, after: "forest-far", depth: 0.65, w: 400, x0: 660, y0: 790, dir: 1, op: 0.9 },
+  // near: in front of everything, biggest, fastest
+  { src: CLOUD.medium, after: "meadow", depth: 1, w: 640, x0: 340, y0: 930, dir: -1, op: 0.95 },
+  { src: CLOUD.large, after: "meadow", depth: 1, w: 680, x0: 620, y0: 1120, dir: 1, op: 0.95 },
+];
 const CREATURES = [
   // a far flock drifting across the high sky, small and slow
   ...FAR_FLOCK.map(([dx, dy], i) => ({
@@ -158,62 +169,37 @@ const CREATURES = [
       return { x, y, scale: 0.25 + 0.95 * r, op: (1 - r) * 0.9 };
     },
   })),
-  // clouds in the distance, drifting slowly with the sky behind them
+  // a small cloud far off, drifting slowly across the high sky
   {
     id: "cloud-far",
     kind: "cloud",
     src: CLOUD.small,
     layer: "mountains",
-    w: 230,
-    pose: (t) => ({ x: wrap(320 + t * 8, -200, 1140), y: 150, op: 0.85 }),
+    w: 200,
+    pose: (t) => ({ x: wrap(320 + t * 6, -200, 1140), y: 110, op: 0.8 }),
   },
-  {
-    id: "cloud-mid",
+  // The parting clouds: gathered toward the middle at the start, at three
+  // distances, they part to the sides as you scroll down to reveal the
+  // canyon. Nearer ones are bigger, part further and rise faster; far
+  // ones are smaller and move less. (x0, y0 is where each starts in the
+  // 941x1672 canvas; dir is which side it parts to.)
+  ...PARTING_CLOUDS.map((c, i) => ({
+    id: `cloud-part-${i}`,
     kind: "cloud",
-    src: CLOUD.medium,
-    layer: "forest-far",
-    w: 390,
-    pose: (t) => ({ x: wrap(760 - t * 12, -260, 1200), y: 250, op: 0.9 }),
-  },
-  // foreground clouds: they start together in the middle, around the B,
-  // and part to the sides as you scroll down into the world (and close
-  // back up if you scroll back), clearing the screen by ~2/3 of the way
-  {
-    id: "cloud-fore-1",
-    kind: "cloud",
-    src: CLOUD.large,
+    src: c.src,
     space: "free",
-    after: "meadow",
-    w: 1150,
+    after: c.after,
+    depth: c.depth,
+    w: c.w,
     pose: (t, p) => {
-      if (p > 0.7) return null;
-      const e = smooth(clamp01(p / 0.65));
-      return { x: 330 - 1060 * e + 12 * Math.sin(t * 0.3), y: 880 - 480 * p };
+      const e = smooth(clamp01(p / PART_RANGE));
+      return {
+        x: c.x0 + c.dir * (300 + 650 * c.depth) * e + 8 * Math.sin(t * 0.3 + i),
+        y: c.y0 - p * (250 + 650 * c.depth),
+        op: c.op,
+      };
     },
-  },
-  {
-    id: "cloud-fore-2",
-    kind: "cloud",
-    src: CLOUD.medium,
-    space: "free",
-    after: "meadow",
-    w: 900,
-    pose: (t, p) => {
-      if (p > 0.7) return null;
-      const e = smooth(clamp01(p / 0.65));
-      return { x: 640 + 920 * e + 12 * Math.sin(t * 0.3 + 1), y: 1130 - 480 * p };
-    },
-  },
-  // ...and one drifts slowly across the top of the sky through the story
-  {
-    id: "cloud-story",
-    kind: "cloud",
-    src: CLOUD.large,
-    space: "free",
-    after: "meadow",
-    w: 820,
-    pose: (t, p) => (p < 0.99 ? null : { x: wrap(1450 - t * 22, -500, 1450), y: 170, op: 0.8 }),
-  },
+  })),
   // two butterflies wandering over the meadow: a big one up close, a small
   // one further off
   ...[
@@ -938,8 +924,6 @@ export const WorldHome = () => {
             const gx = ax + (x - ax) * g + tx * (L.depth - 0.3) * TILT_X;
             const gy = ay + (y - ay) * g + ty * Math.max(0, L.depth - 0.1) * TILT_Y;
             placed[L.key] = { gx, gy, g };
-            // the free space (nearer than any layer): only the tilt moves it
-            placed.free = { gx: tx * (1 - 0.3) * TILT_X * FREE_TILT, gy: ty * (1 - 0.1) * TILT_Y * FREE_TILT, g: 1 };
             el.style.transform = `translate3d(${(ox + gx * k).toFixed(1)}px, ${(oy + gy * k).toFixed(1)}px, 0) scale(${g.toFixed(4)})`;
           });
 
@@ -976,7 +960,10 @@ export const WorldHome = () => {
         const t = (now - t0) / 1000;
         CREATURES.forEach((c, i) => {
           const el = creatureRefs.current[i];
-          const at = placed[c.space === "free" ? "free" : c.layer];
+          // free creatures (the parting clouds) sit in canvas space, moved
+          // by the tilt according to their own depth
+          const at =
+            c.space === "free" ? { gx: tx * TILT_X * CLOUD_TILT * c.depth, gy: ty * TILT_Y * CLOUD_TILT * c.depth, g: 1 } : placed[c.layer];
           if (!el || !at) return;
           const pose = c.pose(t, fit.p);
           if (!pose) {
