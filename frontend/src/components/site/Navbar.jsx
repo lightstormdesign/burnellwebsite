@@ -114,7 +114,8 @@ export const Navbar = () => {
             {NAV_LINKS.map((l) => (
               <NavLink
                 key={l.label}
-                to={l.to}
+                // the story lives on Home on mobile: About glides down to it
+                to={l.to === "/about" ? "/#story" : l.to}
                 label={l.label}
                 active={location.pathname === l.to}
                 mobile={{ onClick: () => setOpen(false) }}

@@ -1,7 +1,8 @@
 import "@/App.css";
 import { lazy, Suspense, useEffect } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Home from "@/pages/Home";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // Home ships in the main bundle; every other page loads on its own, and is
 // fetched in the background once Home has had the connection to itself.
@@ -24,6 +25,14 @@ import { TrackingPixel } from "@/components/site/TrackingPixel";
 import { GlowCursor } from "@/components/site/GlowCursor";
 import { SacredGeometryField } from "@/components/site/SacredGeometryField";
 import { WorldDim } from "@/components/site/WorldDim";
+
+// On mobile the About page is gone: the story is told on Home, after the
+// world, so /about goes there. Desktop keeps the About page until the
+// desktop version of the world exists.
+function AboutRoute() {
+  const isMobile = useIsMobile();
+  return isMobile ? <Navigate to="/#story" replace /> : <About />;
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -50,7 +59,7 @@ function App() {
         <Suspense fallback={<div className="min-h-screen bg-black" />}>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
+            <Route path="/about" element={<AboutRoute />} />
             <Route path="/epk" element={<EPK />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/music" element={<Music />} />

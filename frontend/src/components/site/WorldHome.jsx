@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { Volume2, VolumeX } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Volume2, VolumeOff } from "lucide-react";
 import {
   ABOUT_STAGES,
   ARTIST_NAME,
@@ -18,7 +18,11 @@ import {
 //
 //   portal      intro loop (3D + birds) plays once, then the hold loop runs
 //               until the tap. "Tap to Enter". The tap also starts
-//               "Beautiful" at half volume.
+//               "Beautiful" at half volume (unless they've muted it with the
+//               speaker button, top-left, which works from the first frame).
+//               The intro's last frame is the loop's first frame, and the
+//               intro stays on screen until the loop has actually drawn a
+//               frame, so there's no black between them.
 //   transition  the whip-pan / water-drop video. Its first frame is the hold
 //               loop's first frame; its last frame is the world at landing.
 //   world       the illustrated layers, starting exactly where the video
@@ -28,6 +32,9 @@ import {
 //               chapters play, settling gently on each one (proximity
 //               scroll-snap), while the world keeps drifting toward you, each
 //               layer growing at its own rate, so it never stops being 3D.
+//
+// About in the menu (/#story) skips straight here and glides down to the
+// first chapter: the story lives on the Home page now.
 //
 // The world layers are mounted from the start, underneath everything, so
 // they've loaded by the time the video ends and the handoff is just the
@@ -43,6 +50,7 @@ const STORY_DIM = 0.55; // how dark the world gets behind the chapters
 const ZOOM_CENTER = [WORLD_CANVAS.width / 2, WORLD_CANVAS.height / 2];
 const TRANSITION_FAILSAFE_MS = 9000;
 const WARM_DELAY_MS = 800; // after the intro starts playing
+const STORY_HASH = "#story";
 const WARM_FALLBACK_MS = 3500; // if it never does (Low Power Mode)
 const SONG_VOLUME = 0.5;
 const SONG_FADE_S = 2.5;
@@ -54,6 +62,27 @@ const FEATHER = "radial-gradient(ellipse 72% 76% at 50% 50%, #000 40%, rgba(0,0,
 const TEXT_POOL = "radial-gradient(ellipse at center, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.38) 48%, transparent 75%)";
 
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
+
+// Run cb once the video has actually put a frame on screen (not just
+// started), so whatever is covering it can be removed without a flash.
+const afterFirstFrame = (v, cb) => {
+  if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(() => cb());
+  else requestAnimationFrame(() => requestAnimationFrame(cb));
+};
+
+// Buffer and decode a hidden video by playing it for a moment (muted, so
+// it's allowed), so it starts instantly later. iOS ignores preload.
+const prime = (v, shouldStop) => {
+  if (!v || v.dataset.primed) return;
+  v.dataset.primed = "1";
+  v.play()
+    ?.then(() => {
+      if (!shouldStop()) return;
+      v.pause();
+      v.currentTime = 0;
+    })
+    .catch(() => {});
+};
 const smooth = (t) => t * t * (3 - 2 * t);
 
 // The story: every photo/bridge chapter from the About page, then a closing
@@ -153,6 +182,12 @@ export const WorldHome = () => {
   const songRef = useRef(null);
   const audioRef = useRef(null); // { ctx, gain } once the song is routed through Web Audio
   const [songOn, setSongOn] = useState(false);
+  const mutedRef = useRef(false); // they turned the music off themselves
+  const primingRef = useRef(false);
+  const pendingStoryRef = useRef(false);
+  const introEndedRef = useRef(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const reduceMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -171,6 +206,33 @@ export const WorldHome = () => {
     if (introDone && phase === "portal") loopRef.current?.play().catch(() => {});
   }, [introDone, phase]);
 
+  // Intro -> loop with no black: the intro holds its last frame (which is
+  // the loop's first) until the loop is really on screen underneath it.
+  const handleIntroEnded = () => {
+    introEndedRef.current = true;
+    const loop = loopRef.current;
+    if (!loop) return setIntroDone(true);
+    try {
+      loop.currentTime = 0;
+    } catch (e) {}
+    loop
+      .play()
+      .then(() => afterFirstFrame(loop, () => setIntroDone(true)))
+      .catch(() => setIntroDone(true));
+  };
+
+  // Once the portal is up, get the loop and the transition decoded and
+  // ready so neither has to load when it's needed.
+  useEffect(() => {
+    if (!warm) return;
+    prime(loopRef.current, () => !introEndedRef.current);
+    primingRef.current = true;
+    prime(transitionRef.current, () => {
+      primingRef.current = false;
+      return !enteringRef.current;
+    });
+  }, [warm]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (warm) return;
     const t = setTimeout(() => setWarm(true), WARM_FALLBACK_MS);
@@ -185,6 +247,12 @@ export const WorldHome = () => {
       window.scrollTo(0, 0);
       root.style.overflow = "";
       root.style.scrollSnapType = "y proximity";
+      introRef.current?.pause();
+      loopRef.current?.pause();
+      if (pendingStoryRef.current) {
+        pendingStoryRef.current = false;
+        requestAnimationFrame(() => scrollToStory());
+      }
     } else {
       root.style.overflow = "hidden";
     }
@@ -227,13 +295,36 @@ export const WorldHome = () => {
     const el = songRef.current;
     if (!el) return;
     if (songOn) {
+      mutedRef.current = true;
       el.pause();
       setSongOn(false);
     } else {
-      audioRef.current?.ctx.resume();
-      el.play().then(() => setSongOn(true)).catch(() => {});
+      mutedRef.current = false;
+      startSong();
     }
   };
+
+  // About (menu) -> the first chapter. The scroll engine eases the world
+  // down to it, so it glides through the descent rather than jumping.
+  const scrollToStory = () => {
+    const a = anchorRefs.current[2];
+    if (a) window.scrollTo(0, a.offsetTop);
+  };
+
+  useEffect(() => {
+    if (location.hash !== STORY_HASH) return;
+    navigate("/", { replace: true });
+    if (phase === "world") {
+      scrollToStory();
+      return;
+    }
+    enteringRef.current = true;
+    clearTimeout(failsafeRef.current);
+    transitionRef.current?.pause();
+    setWarm(true);
+    pendingStoryRef.current = true;
+    setPhase("world");
+  }, [location.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(
     () => () => {
@@ -246,8 +337,9 @@ export const WorldHome = () => {
   const handleTap = () => {
     if (enteringRef.current) return;
     enteringRef.current = true;
+    primingRef.current = false;
     setWarm(true);
-    startSong();
+    if (!mutedRef.current && !songOn) startSong();
     const v = transitionRef.current;
     if (reduceMotion || !v) {
       enterWorld();
@@ -257,6 +349,9 @@ export const WorldHome = () => {
     try {
       v.currentTime = 0;
     } catch (e) {}
+    // already running (tapped while it was being primed): no new
+    // "playing" event will come, so hand off from here
+    if (!v.paused) afterFirstFrame(v, () => setTransitionPlaying(true));
     v.play().catch(enterWorld);
     failsafeRef.current = setTimeout(enterWorld, TRANSITION_FAILSAFE_MS);
   };
@@ -438,7 +533,10 @@ export const WorldHome = () => {
         muted
         playsInline
         preload={warm ? "auto" : "none"}
-        onPlaying={() => setTransitionPlaying(true)}
+        onPlaying={(e) => {
+          if (primingRef.current || !enteringRef.current) return;
+          afterFirstFrame(e.currentTarget, () => setTransitionPlaying(true));
+        }}
         onEnded={enterWorld}
         tabIndex={-1}
       />
@@ -479,7 +577,7 @@ export const WorldHome = () => {
           playsInline
           preload="auto"
           onPlaying={warmSoon}
-          onEnded={() => setIntroDone(true)}
+          onEnded={handleIntroEnded}
           tabIndex={-1}
         />
         <div
@@ -502,16 +600,18 @@ export const WorldHome = () => {
       </button>
 
       <audio ref={songRef} src={MEDIA.song} preload="metadata" loop playsInline />
-      {inWorld && (
-        <button
-          type="button"
-          onClick={toggleSong}
-          aria-label={songOn ? "Pause music" : "Play music"}
-          className="fixed left-[18px] top-[7px] z-[60] flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/30 text-[var(--sm-gold-light)] backdrop-blur-sm"
-        >
-          {songOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
-        </button>
-      )}
+      {/* Music: mirrors the menu icon (same size, same inset from the
+          other corner). Slashed until the music is on. */}
+      <button
+        type="button"
+        onClick={toggleSong}
+        data-testid="world-music-toggle"
+        aria-label={songOn ? "Mute music" : "Play music"}
+        aria-pressed={songOn}
+        className="fixed left-[14px] top-[2px] z-[60] p-[10px] text-white"
+      >
+        {songOn ? <Volume2 size={25} /> : <VolumeOff size={25} />}
+      </button>
 
       {/* Scroll track: landing, end of the descent, then one stop per chapter */}
       <div
