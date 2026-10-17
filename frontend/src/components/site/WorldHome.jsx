@@ -59,8 +59,11 @@ const TRANSITION_FAILSAFE_MS = 9000;
 const WARM_DELAY_MS = 800; // after the intro starts playing
 const STORY_HASH = "#story";
 const WARM_FALLBACK_MS = 3500; // if it never does (Low Power Mode)
-const SONG_VOLUME = 0.5;
-const SONG_FADE_S = 2.5;
+// Half volume and the 2.5s fade-in are baked into the song file itself, and
+// its beat is a precomputed map (one byte per 1/30s), so no Web Audio runs:
+// on iPhone, Web Audio starting up froze the transition video mid-play.
+const BEAT_MAP = "/burnell-beautiful-beat.bin";
+const BEAT_FPS = 30;
 const EMBLEM = "/burnell-emblem.png";
 const EMBLEM_DEPTH = 7; // stacked copies behind the face, 1px apart
 const LANDING_EARLY_S = 1.3; // the B starts fading in this long before the transition ends
@@ -276,7 +279,8 @@ const Chapter = ({ s, load }) => {
 // the face give it thickness as it turns.
 // It also leans with the phone's tilt (--tilt-x/--tilt-y) and flares with
 // the bass of the song (--beat): a brighter, blurred copy of the B and a
-// second halo, both following --beat.
+// second halo, both following --beat. (Both variables are set on the
+// landing only, so updating them every frame never restyles the whole page.)
 const Emblem3D = () => (
   <div className="relative" style={{ perspective: "700px" }}>
     <div
@@ -332,7 +336,8 @@ export const WorldHome = () => {
   const enteringRef = useRef(false);
   const failsafeRef = useRef(null);
   const songRef = useRef(null);
-  const audioRef = useRef(null); // { ctx, gain } once the song is routed through Web Audio
+  const beatMapRef = useRef(null); // Uint8Array, one value per 1/30s of the song
+  const phaseRef = useRef("portal");
   const [songOn, setSongOn] = useState(false);
   const mutedRef = useRef(false); // they turned the music off themselves
   const primingRef = useRef(false);
@@ -474,6 +479,18 @@ export const WorldHome = () => {
   }, [warm]);
   const warmSoon = () => setTimeout(() => setWarm(true), WARM_DELAY_MS);
 
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+
+  useEffect(() => {
+    if (!warm || beatMapRef.current) return;
+    fetch(BEAT_MAP)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject()))
+      .then((b) => (beatMapRef.current = new Uint8Array(b)))
+      .catch(() => {});
+  }, [warm]);
+
   // No page scroll until the world is entered; scroll-snap only in the world.
   useEffect(() => {
     const root = document.documentElement;
@@ -545,7 +562,7 @@ export const WorldHome = () => {
       // picture stopped while the clock kept going
       const frozenFor = Math.max(now - lastMoveAt, lastFrameAt ? now - lastFrameAt : 0);
       if (frozenFor < STALL_MS) return;
-      if (kicks < 3) {
+      if (kicks < 1) {
         kicks++;
         dlog(`frozen ${Math.round(frozenFor)}ms at ${v.currentTime.toFixed(2)}s: kick ${kicks}`);
         lastMoveAt = now;
@@ -560,33 +577,11 @@ export const WorldHome = () => {
       }
     }, 250);
   };
-  // "Beautiful" at half volume. iOS ignores media.volume, so the volume is
-  // a Web Audio gain node. Everything here has to happen inside the tap
-  // (that's what unlocks audio on iOS).
+  // "Beautiful" (half volume and fade-in are in the file). Has to start
+  // inside a tap, which is what lets a phone play sound.
   const startSong = () => {
     const el = songRef.current;
     if (!el) return;
-    try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (AC && !audioRef.current) {
-        const ctx = new AC();
-        const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(SONG_VOLUME, ctx.currentTime + SONG_FADE_S);
-        const src = ctx.createMediaElementSource(el);
-        src.connect(gain).connect(ctx.destination);
-        // the B's glow follows the bass: read the song's spectrum every frame
-        const analyser = ctx.createAnalyser();
-        analyser.fftSize = 512;
-        analyser.smoothingTimeConstant = 0.6;
-        src.connect(analyser);
-        audioRef.current = { ctx, gain, analyser, bins: new Uint8Array(analyser.frequencyBinCount) };
-      }
-      audioRef.current?.ctx.resume();
-    } catch (e) {
-      audioRef.current = null;
-    }
-    if (!audioRef.current) el.volume = SONG_VOLUME;
     el.play()
       .then(() => {
         songOnRef.current = true;
@@ -634,7 +629,6 @@ export const WorldHome = () => {
   useEffect(
     () => () => {
       songRef.current?.pause();
-      audioRef.current?.ctx.close().catch(() => {});
     },
     []
   );
@@ -676,10 +670,8 @@ export const WorldHome = () => {
     let tx = 0;
     let ty = 0;
     let beat = 0;
-    let bassAvg = 0;
     let fit = null; // { k, ox, oy } from the last layout
     const placed = {}; // layer key -> { gx, gy, g } in canvas px
-    const root = document.documentElement;
     const t0 = performance.now();
 
     const frame = (now) => {
@@ -702,8 +694,8 @@ export const WorldHome = () => {
         const key = `${W}|${H}|${ys.toFixed(1)}|${target}|${tx.toFixed(3)}|${ty.toFixed(3)}`;
         if (key !== lastKey) {
           const sizeChanged = !lastKey.startsWith(`${W}|${H}|`);
-          root.style.setProperty("--tilt-x", tx.toFixed(3));
-          root.style.setProperty("--tilt-y", ty.toFixed(3));
+          landingRef.current?.style.setProperty("--tilt-x", tx.toFixed(3));
+          landingRef.current?.style.setProperty("--tilt-y", ty.toFixed(3));
           lastKey = key;
           // cover-fit the painted canvas, centered (same fit as the video)
           const k = Math.max(W / WORLD_CANVAS.width, H / WORLD_CANVAS.height);
@@ -764,7 +756,10 @@ export const WorldHome = () => {
         }
       }
       // creatures: every frame, in the space of the layer each lives in
-      if (fit && !reduceMotion) {
+      // (only once the world is showing: nothing extra runs during the
+      // transition video)
+      const live = phaseRef.current === "world";
+      if (fit && !reduceMotion && live) {
         const t = (now - t0) / 1000;
         CREATURES.forEach((c, i) => {
           const el = creatureRefs.current[i];
@@ -782,27 +777,17 @@ export const WorldHome = () => {
         });
       }
 
-      // the beat: bass energy against its own running average, so it
-      // flares on kicks whatever the song's overall loudness
-      const a = audioRef.current;
-      if (a?.analyser && songOnRef.current) {
-        a.analyser.getByteFrequencyData(a.bins);
-        const bass = (a.bins[1] + a.bins[2] + a.bins[3] + a.bins[4]) / (4 * 255);
-        bassAvg += (bass - bassAvg) * 0.03;
-        const hit = clamp01((bass - bassAvg * 0.95) / 0.16);
-        beat = Math.max(hit, beat * 0.9);
-      } else {
-        beat *= 0.9;
-      }
-      root.style.setProperty("--beat", beat.toFixed(3));
+      // the beat: read from the precomputed map at the song's position
+      const song = songRef.current;
+      const map = beatMapRef.current;
+      const target01 = map && song && songOnRef.current && !song.paused ? (map[Math.floor(song.currentTime * BEAT_FPS)] ?? 0) / 255 : 0;
+      beat += (target01 - beat) * 0.5;
+      if (live) landingRef.current?.style.setProperty("--beat", beat.toFixed(3));
 
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
-    return () => {
-      cancelAnimationFrame(raf);
-      root.style.removeProperty("--beat");
-    };
+    return () => cancelAnimationFrame(raf);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const inWorld = phase === "world";
