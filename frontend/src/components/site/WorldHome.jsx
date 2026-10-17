@@ -78,6 +78,18 @@ const TILT_Y = 62;
 const BIRD = { up: "/burnell-world-bird-up.webp", down: "/burnell-world-bird-down.webp" };
 const FISH = "/burnell-world-fish.webp";
 const BUTTERFLY = "/burnell-world-butterfly.webp";
+const WATER_MASK = "/burnell-world-water-mask.webp"; // where the stream layer is water (half size)
+const WATER_DROP = "/burnell-water-drop.m4a";
+const SUN = [464, 572]; // the sun, in the sky layer
+// pollen: golden specks drifting up through the meadow (near, larger) and
+// over the stream (further, smaller), glowing brighter on the beat
+const POLLEN = Array.from({ length: 30 }, (_, i) => {
+  const near = i % 2 === 0;
+  const r = (n) => ((Math.sin((i + 1) * 12.9898 * n) * 43758.5453) % 1 + 1) % 1; // stable pseudo-random
+  return near
+    ? { layer: "meadow", x0: 120 + r(1) * 1170, y0: 560, range: 640, w: 14 + r(2) * 12, speed: 16 + r(3) * 18, off: r(4) * 640, sway: 10 + r(5) * 18, ph: r(6) * 6 }
+    : { layer: "stream", x0: 150 + r(1) * 650, y0: 1000, range: 520, w: 9 + r(2) * 7, speed: 10 + r(3) * 12, off: r(4) * 520, sway: 6 + r(5) * 10, ph: r(6) * 6 };
+});
 const CLOUD = {
   large: "/burnell-world-cloud-large.webp",
   medium: "/burnell-world-cloud-medium.webp",
@@ -200,6 +212,23 @@ const CREATURES = [
       };
     },
   })),
+  // the sun, pulsing with the beat (its glow follows --beat in CSS)
+  { id: "sun", kind: "sun", layer: "sky", w: 460, pose: () => ({ x: SUN[0], y: SUN[1] }) },
+  ...POLLEN.map((c, i) => ({
+    id: `pollen-${i}`,
+    kind: "pollen",
+    layer: c.layer,
+    w: c.w,
+    pose: (t, p) => {
+      if (p < 0.55) return null;
+      const rise = (t * c.speed + c.off) % c.range;
+      return {
+        x: c.x0 + c.sway * Math.sin(t * 0.7 + c.ph),
+        y: c.y0 - rise,
+        op: Math.min(1, rise / 90, (c.range - rise) / 140) * 0.9,
+      };
+    },
+  })),
   // two butterflies wandering over the meadow: a big one up close, a small
   // one further off
   ...[
@@ -229,6 +258,8 @@ const CreatureBody = ({ c, load }) => (
       {c.kind === "fish" && <img src={load ? FISH : undefined} alt="" className="block w-full" />}
       {c.kind === "butterfly" && <img src={load ? BUTTERFLY : undefined} alt="" className="butterfly-wings block w-full" />}
       {c.kind === "cloud" && <img src={load ? c.src : undefined} alt="" className="block w-full" />}
+      {c.kind === "sun" && <span className="sun-pulse block w-full" />}
+      {c.kind === "pollen" && <span className="pollen-dot block w-full" />}
       {c.kind === "ripple" && (
         <div className="relative w-full" style={{ aspectRatio: "3.2 / 1" }}>
           <span className="ripple-ring" style={{ transform: "translate(-50%, -50%)" }} />
@@ -414,6 +445,9 @@ export const WorldHome = () => {
   const layersLoaded = useRef(0);
   const fetchAbortRef = useRef(null);
   const recoveredRef = useRef(null); // the fresh transition video, if one was needed
+  const shimmerRef = useRef(null);
+  const tapLayerRef = useRef(null);
+  const layoutRef = useRef(null); // { k, ox, oy, placed } from the last frame, for taps
   const [songOn, setSongOn] = useState(false);
   const mutedRef = useRef(false); // they turned the music off themselves
   const primingRef = useRef(false);
@@ -446,6 +480,64 @@ export const WorldHome = () => {
     debugLines.current = [...debugLines.current.slice(-14), `${((performance.now() - t0Ref.current) / 1000).toFixed(2)} ${msg}`];
     if (debugRef.current) debugRef.current.textContent = debugLines.current.join("\n");
   };
+
+  // Tap the water: a ripple spreads where you tapped (anchored in the
+  // world, so it rides along with the stream) and a soft drop sounds. Only
+  // real taps (not scrolls), only on the water itself.
+  useEffect(() => {
+    if (phase !== "world" || solo) return;
+    let water = null; // the mask's alpha, to tell water from rock
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = img.width;
+      c.height = img.height;
+      const ctx = c.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      water = { w: img.width, h: img.height, a: ctx.getImageData(0, 0, img.width, img.height).data };
+    };
+    img.src = WATER_MASK;
+    const drop = new Audio(WATER_DROP);
+    drop.preload = "auto";
+    let down = null;
+    const onDown = (e) => (down = { x: e.clientX, y: e.clientY, t: performance.now() });
+    const onUp = (e) => {
+      const d = down;
+      down = null;
+      if (!d || !water || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 12 || performance.now() - d.t > 400) return;
+      if (e.target.closest?.("a, button")) return;
+      const L = layoutRef.current;
+      const at = L?.placed.stream;
+      if (!at) return;
+      // screen -> stream layer coordinates
+      const lx = ((e.clientX - L.ox) / L.k - at.gx) / at.g;
+      const ly = ((e.clientY - L.oy) / L.k - at.gy) / at.g;
+      const mx = Math.floor((lx / WORLD_CANVAS.width) * water.w);
+      const my = Math.floor((ly / WORLD_CANVAS.height) * water.h);
+      if (mx < 0 || my < 0 || mx >= water.w || my >= water.h || water.a[(my * water.w + mx) * 4 + 3] < 128) return;
+      const layer = tapLayerRef.current;
+      if (layer) {
+        const r = document.createElement("div");
+        r.className = "water-tap-ripple";
+        r.style.left = `${(lx * L.k).toFixed(1)}px`;
+        r.style.top = `${(ly * L.k).toFixed(1)}px`;
+        r.style.width = `${(240 * L.k).toFixed(1)}px`;
+        r.innerHTML = "<span></span><span></span><span></span>";
+        layer.appendChild(r);
+        setTimeout(() => r.remove(), 1700);
+      }
+      try {
+        const s = drop.cloneNode();
+        s.play().catch(() => {});
+      } catch (err) {}
+    };
+    window.addEventListener("pointerdown", onDown, { passive: true });
+    window.addEventListener("pointerup", onUp, { passive: true });
+    return () => {
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Tilt: iOS shows a permission prompt, and a system prompt over the
   // transition can freeze it, so ask on their first touch in the world.
@@ -925,7 +1017,18 @@ export const WorldHome = () => {
             const gy = ay + (y - ay) * g + ty * Math.max(0, L.depth - 0.1) * TILT_Y;
             placed[L.key] = { gx, gy, g };
             el.style.transform = `translate3d(${(ox + gx * k).toFixed(1)}px, ${(oy + gy * k).toFixed(1)}px, 0) scale(${g.toFixed(4)})`;
+            // the water's shimmer and tap ripples ride exactly on the stream
+            if (L.key === "stream")
+              [shimmerRef.current, tapLayerRef.current].forEach((o) => {
+                if (!o) return;
+                if (sizeChanged) {
+                  o.style.width = `${(L.w * k).toFixed(1)}px`;
+                  o.style.height = `${(L.w * k * (WORLD_CANVAS.height / WORLD_CANVAS.width)).toFixed(1)}px`;
+                }
+                o.style.transform = el.style.transform;
+              });
           });
+          layoutRef.current = { k, ox, oy, placed };
 
           // landing: blurred + dimmed under the copy, lifting as the descent begins
           const veil = 1 - smooth(clamp01(p / 0.3));
@@ -991,7 +1094,10 @@ export const WorldHome = () => {
       const map = beatMapRef.current;
       const target01 = map && song && songOnRef.current && !song.paused ? (map[Math.floor(song.currentTime * BEAT_FPS)] ?? 0) / 255 : 0;
       beat += (target01 - beat) * 0.5;
-      if (live) landingRef.current?.style.setProperty("--beat", beat.toFixed(3));
+      if (live) {
+        landingRef.current?.style.setProperty("--beat", beat.toFixed(3));
+        blurRef.current?.style.setProperty("--beat", beat.toFixed(3));
+      }
 
       raf = requestAnimationFrame(frame);
     };
@@ -1029,6 +1135,27 @@ export const WorldHome = () => {
                 className="absolute left-0 top-0 max-w-none select-none"
                 style={{ willChange: "transform", transformOrigin: "0 0" }}
               />
+              {L.key === "stream" && (
+                <>
+                  {/* light moving on the water, only where the stream layer is water */}
+                  <div
+                    ref={shimmerRef}
+                    className="stream-shimmer absolute left-0 top-0 overflow-hidden"
+                    style={{
+                      transformOrigin: "0 0",
+                      WebkitMaskImage: loadWorld ? `url(${WATER_MASK})` : "none",
+                      maskImage: loadWorld ? `url(${WATER_MASK})` : "none",
+                      WebkitMaskSize: "100% 100%",
+                      maskSize: "100% 100%",
+                      visibility: loadWorld ? "visible" : "hidden",
+                    }}
+                  >
+                    <div className="shimmer-a" />
+                    <div className="shimmer-b" />
+                  </div>
+                  <div ref={tapLayerRef} className="absolute left-0 top-0" style={{ transformOrigin: "0 0" }} />
+                </>
+              )}
               {/* the fish swims in front of the stream but behind the boulders */}
               {CREATURES.map((c, ci) =>
                 (c.space === "free" ? c.after : c.layer) === L.key ? <Creature key={c.id} c={c} load={loadWorld} refFn={(el) => (creatureRefs.current[ci] = el)} /> : null
