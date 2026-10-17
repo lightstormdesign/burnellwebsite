@@ -76,7 +76,8 @@ const TILT_Y = 62;
 // and the tilt). `pose(t, p)` gives where it is at time t (seconds) and
 // descent progress p, or null when it's off stage.
 const BIRD = { up: "/burnell-world-bird-up.webp", down: "/burnell-world-bird-down.webp" };
-const FISH = "/burnell-world-fish.webp";
+const FISH = "/burnell-world-fish.webp"; // rising
+const FISH_DIVE = "/burnell-world-fish-dive.webp"; // heading back down
 const BUTTERFLY = "/burnell-world-butterfly.webp";
 const CLOUD = {
   large: "/burnell-world-cloud-large.webp",
@@ -166,7 +167,11 @@ const CREATURES = [
       return {
         x: FISH_X[0] + (FISH_X[1] - FISH_X[0]) * u,
         y: WATERLINE + FISH_DEPTH - FISH_RISE * u * (1 - u),
-        rot: -20 + 110 * u,
+        // rising pose up to the top of the arc, then the diving pose; each
+        // turned so the fish heads along its path (the two images are drawn
+        // at different angles, so the swap at the top is seamless)
+        dive: u > 0.5,
+        rot: u > 0.5 ? -40 + 110 * (u - 0.5) : -20 + 110 * u,
       };
     },
   },
@@ -258,7 +263,12 @@ const CreatureBody = ({ c, load }) => (
           <img className="bird-down" src={load ? BIRD.down : undefined} alt="" />
         </div>
       )}
-      {c.kind === "fish" && <img src={load ? FISH : undefined} alt="" className="block w-full" />}
+      {c.kind === "fish" && (
+        <div className="relative w-full">
+          <img src={load ? FISH : undefined} alt="" className="block w-full" />
+          <img src={load ? FISH_DIVE : undefined} alt="" className="absolute inset-0 block w-full" style={{ opacity: 0 }} />
+        </div>
+      )}
       {c.kind === "butterfly" && <img src={load ? BUTTERFLY : undefined} alt="" className="butterfly-wings block w-full" />}
       {c.kind === "cloud" && <img src={load ? c.src : undefined} alt="" className="block w-full" />}
       {c.kind === "leaf" && <img src={load ? c.src : undefined} alt="" className="block w-full" />}
@@ -684,6 +694,10 @@ export const WorldHome = () => {
       window.scrollTo(0, 0);
       root.style.overflow = "";
       root.style.scrollSnapType = "y proximity";
+      // no rubber-band past the ends: on iPhone it dragged the world up and
+      // showed black below the last chapter
+      root.style.overscrollBehaviorY = "none";
+      document.body.style.overscrollBehaviorY = "none";
       introRef.current?.pause();
       loopRef.current?.pause();
       if (pendingStoryRef.current) {
@@ -696,6 +710,8 @@ export const WorldHome = () => {
     return () => {
       root.style.overflow = "";
       root.style.scrollSnapType = "";
+      root.style.overscrollBehaviorY = "";
+      document.body.style.overscrollBehaviorY = "";
     };
   }, [phase]);
 
@@ -1011,6 +1027,11 @@ export const WorldHome = () => {
             const wy = fit.oy + (at.gy + y0 * at.g) * fit.k;
             el.style.transform = `translate3d(${wx.toFixed(1)}px, ${wy.toFixed(1)}px, 0) scale(${at.g.toFixed(4)})`;
             el.firstChild.style.transform = `translate3d(${((pose.x - x0) * fit.k).toFixed(1)}px, ${((pose.y - y0) * fit.k).toFixed(1)}px, 0) rotate(${(pose.rot ?? 0).toFixed(1)}deg)`;
+            if (pose.dive !== undefined) {
+              const [rise, dive] = el.querySelectorAll("img");
+              rise.style.opacity = pose.dive ? "0" : "1";
+              dive.style.opacity = pose.dive ? "1" : "0";
+            }
             return;
           }
           const sx = fit.ox + (at.gx + pose.x * at.g) * fit.k;
