@@ -68,8 +68,8 @@ const EMBLEM = "/burnell-emblem.png";
 const EMBLEM_DEPTH = 7; // stacked copies behind the face, 1px apart
 const LANDING_EARLY_S = 1.3; // the B starts fading in this long before the transition ends
 const STALL_MS = 1200; // transition's clock stuck this long: kick it once, then move on
-const TILT_X = 40; // canvas px of sideways shift at full tilt, nearest layer
-const TILT_Y = 26;
+const TILT_X = 68; // canvas px of sideways shift at full tilt, nearest layer
+const TILT_Y = 44;
 
 // Creatures. Coordinates are in the space of the layer each one lives in
 // (so it rides along with that layer through the descent, the story zoom
@@ -296,7 +296,7 @@ const Emblem3D = () => (
     <div
       style={{
         transformStyle: "preserve-3d",
-        transform: "rotateY(calc(var(--tilt-x, 0) * 16deg)) rotateX(calc(var(--tilt-y, 0) * -12deg))",
+        transform: "rotateY(calc(var(--tilt-x, 0) * 27deg)) rotateX(calc(var(--tilt-y, 0) * -20deg))",
       }}
     >
     <div className="animate-emblem-sway relative w-[clamp(6.5rem,min(36vw,18svh),10rem)]">
