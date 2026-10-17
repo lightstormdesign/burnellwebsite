@@ -83,10 +83,10 @@ const CLOUD = {
   medium: "/burnell-world-cloud-medium.webp",
   small: "/burnell-world-cloud-small.webp",
 };
-// Foreground clouds aren't in any layer: they're nearer than everything
-// (FREE_DEPTH, past the meadow's 1), so they sweep by fastest on scroll and
-// swing furthest with the tilt.
-const FREE_DEPTH = 1.4;
+// Foreground clouds aren't in any layer: they're driven by the scroll (see
+// their poses), with only a light touch of the tilt (FREE_TILT of what the
+// nearest layer gets), so the scroll is clearly what moves them.
+const FREE_TILT = 0.25;
 const wrap = (v, lo, hi) => lo + ((((v - lo) % (hi - lo)) + (hi - lo)) % (hi - lo));
 const FAR_FLOCK = [[0, 0], [-56, -22], [-56, 24], [-112, -42], [-110, 46]];
 const NEAR_FLOCK = [[0, 0], [95, -34], [108, 40]];
@@ -175,9 +175,9 @@ const CREATURES = [
     w: 390,
     pose: (t) => ({ x: wrap(760 - t * 12, -260, 1200), y: 250, op: 0.9 }),
   },
-  // foreground clouds: on the way down into the world, two sweep in from
-  // the sides (rising a little) and back out, much faster than anything
-  // else, framing the world rather than covering it...
+  // foreground clouds: they start together in the middle, around the B,
+  // and part to the sides as you scroll down into the world (and close
+  // back up if you scroll back), clearing the screen by ~2/3 of the way
   {
     id: "cloud-fore-1",
     kind: "cloud",
@@ -186,10 +186,9 @@ const CREATURES = [
     after: "meadow",
     w: 1150,
     pose: (t, p) => {
-      const u = (p - 0.04) / 0.62;
-      if (u <= 0 || u >= 1) return null;
-      // in from the left until its right edge covers ~a third, then out
-      return { x: -720 + 440 * Math.sin(Math.PI * u) + 15 * Math.sin(t * 0.3), y: 1250 - 950 * p };
+      if (p > 0.7) return null;
+      const e = smooth(clamp01(p / 0.65));
+      return { x: 330 - 1060 * e + 12 * Math.sin(t * 0.3), y: 880 - 480 * p };
     },
   },
   {
@@ -200,10 +199,9 @@ const CREATURES = [
     after: "meadow",
     w: 900,
     pose: (t, p) => {
-      const u = (p - 0.22) / 0.68;
-      if (u <= 0 || u >= 1) return null;
-      // in from the right, the same way
-      return { x: 1420 - 350 * Math.sin(Math.PI * u) + 15 * Math.sin(t * 0.3 + 1), y: 1500 - 950 * p };
+      if (p > 0.7) return null;
+      const e = smooth(clamp01(p / 0.65));
+      return { x: 640 + 920 * e + 12 * Math.sin(t * 0.3 + 1), y: 1130 - 480 * p };
     },
   },
   // ...and one drifts slowly across the top of the sky through the story
@@ -941,7 +939,7 @@ export const WorldHome = () => {
             const gy = ay + (y - ay) * g + ty * Math.max(0, L.depth - 0.1) * TILT_Y;
             placed[L.key] = { gx, gy, g };
             // the free space (nearer than any layer): only the tilt moves it
-            placed.free = { gx: tx * (FREE_DEPTH - 0.3) * TILT_X, gy: ty * (FREE_DEPTH - 0.1) * TILT_Y, g: 1 };
+            placed.free = { gx: tx * (1 - 0.3) * TILT_X * FREE_TILT, gy: ty * (1 - 0.1) * TILT_Y * FREE_TILT, g: 1 };
             el.style.transform = `translate3d(${(ox + gx * k).toFixed(1)}px, ${(oy + gy * k).toFixed(1)}px, 0) scale(${g.toFixed(4)})`;
           });
 
