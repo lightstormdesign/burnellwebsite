@@ -312,6 +312,19 @@ body {
   -webkit-mask-image: radial-gradient(circle 95px at var(--wand-mx, -9999px) var(--wand-my, -9999px), #000 0%, #000 55%, transparent 100%);
   mask-image: radial-gradient(circle 95px at var(--wand-mx, -9999px) var(--wand-my, -9999px), #000 0%, #000 55%, transparent 100%);
 }
+/* World reveal (SacredGeometryField.jsx): Burnell's painted world, faint,
+   seen only through a soft window around the cursor. It drifts a few px
+   against the cursor so it feels like it's behind the page, not on it. */
+.world-reveal {
+  mix-blend-mode: screen;
+  opacity: 0.5;
+  -webkit-mask-image: radial-gradient(circle 150px at var(--wand-mx, -9999px) var(--wand-my, -9999px), #000 0%, rgba(0, 0, 0, 0.6) 45%, transparent 100%);
+  mask-image: radial-gradient(circle 150px at var(--wand-mx, -9999px) var(--wand-my, -9999px), #000 0%, rgba(0, 0, 0, 0.6) 45%, transparent 100%);
+}
+.world-reveal-art {
+  transform: translate3d(calc(var(--wand-ndx, 0) * -14px), calc(var(--wand-ndy, 0) * -10px), 0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sacred-geometry-spin {
     animation: none !important;

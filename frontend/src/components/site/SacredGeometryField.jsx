@@ -78,6 +78,23 @@ const FlowerCluster = ({ opacity, strokeWidth, animated }) => (
 //     page. Desktop-with-mouse only via .has-magic-cursor (MagicCursor only
 //     ever adds that class after confirming a real fine pointer), so this
 //     layer is simply inert — no wasted paint — everywhere else.
+// Desktop pages with dark backgrounds reveal Burnell's illustrated world
+// under the cursor instead of the ripples: his world (the same painted
+// layers as the mobile Home, at their landed positions) hiding faintly in
+// the dark. Pages with a photo background keep the ripples, since a
+// painting over a photo of him would clash.
+const WORLD_REVEAL_ROUTES = ["/tour", "/epk", "/contact", "/only-hueman"];
+
+const WorldReveal = () => (
+  <div aria-hidden className="world-reveal pointer-events-none fixed inset-0 z-[1] hidden overflow-hidden md:block">
+    {/* a background (not an <img>) so phones, where this is hidden, never download it */}
+    <div
+      className="world-reveal-art absolute -inset-6"
+      style={{ background: 'url("/burnell-world-reveal.webp") center 45% / cover no-repeat' }}
+    />
+  </div>
+);
+
 export const SacredGeometryField = () => {
   // The wand-reveal layer is replaced by StardustMist.jsx on the Home page
   // specifically ("replace the spotlight with stardust mist") — everywhere
@@ -98,7 +115,9 @@ export const SacredGeometryField = () => {
         <FlowerCluster opacity={0.07} strokeWidth={0.011} animated />
       </div>
 
-      {!isHome && (
+      {WORLD_REVEAL_ROUTES.includes(pathname) && <WorldReveal />}
+
+      {!isHome && !WORLD_REVEAL_ROUTES.includes(pathname) && (
         <div aria-hidden className="sacred-geometry-reveal sacred-geometry-portal-fx pointer-events-none fixed inset-0 z-[1] hidden overflow-hidden md:block">
           <FlowerCluster opacity={0.85} strokeWidth={0.008} animated={false} />
         </div>
