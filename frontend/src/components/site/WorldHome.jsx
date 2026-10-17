@@ -353,6 +353,10 @@ export const WorldHome = () => {
   // ?debug: a small on-screen log of what the transition and the song do,
   // for diagnosing playback on a real phone
   const debug = typeof window !== "undefined" && window.location.search.includes("debug");
+  // ?debug&solo: never load the world (layers, creatures, story photos), to
+  // test the transition video entirely on its own
+  const solo = debug && window.location.search.includes("solo");
+  const loadWorld = warm && !solo;
   const debugRef = useRef(null);
   const debugLines = useRef([]);
   const t0Ref = useRef(typeof performance !== "undefined" ? performance.now() : 0);
@@ -797,13 +801,22 @@ export const WorldHome = () => {
   return (
     <div data-testid="world-home" className="relative">
       {/* The world (always mounted, so it's loaded before the video ends) */}
-      <div ref={stageRef} className="fixed inset-x-0 top-0 z-10 overflow-hidden bg-black" style={{ height: "100lvh" }} aria-hidden>
+      {/* Kept invisible (not painted) until the world itself: on iPhone, the
+          whole painted world sitting decoded under the transition starved
+          it of memory and froze its picture partway. The transition fades
+          out over it, which covers the moment it takes to draw. */}
+      <div
+        ref={stageRef}
+        className="fixed inset-x-0 top-0 z-10 overflow-hidden bg-black"
+        style={{ height: "100lvh", visibility: inWorld ? "visible" : "hidden" }}
+        aria-hidden
+      >
         <div ref={blurRef} className="absolute inset-0" style={{ filter: "blur(6px)" }}>
           {WORLD_LAYERS.map((L, i) => (
             <Fragment key={L.key}>
               <img
                 ref={(el) => (layerRefs.current[i] = el)}
-                src={warm ? L.src : undefined}
+                src={loadWorld ? L.src : undefined}
                 alt=""
                 decoding="async"
                 className="absolute left-0 top-0 max-w-none select-none"
@@ -811,7 +824,7 @@ export const WorldHome = () => {
               />
               {/* the fish swims in front of the stream but behind the boulders */}
               {CREATURES.map((c, ci) =>
-                c.layer === L.key ? <Creature key={c.id} c={c} load={warm} refFn={(el) => (creatureRefs.current[ci] = el)} /> : null
+                c.layer === L.key ? <Creature key={c.id} c={c} load={loadWorld} refFn={(el) => (creatureRefs.current[ci] = el)} /> : null
               )}
             </Fragment>
           ))}
@@ -875,7 +888,7 @@ export const WorldHome = () => {
       </div>
 
       {/* Story chapters, faded in and out by scroll position */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-20" style={{ height: "100svh" }}>
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-20" style={{ height: "100svh", visibility: inWorld ? "visible" : "hidden" }}>
         {CHAPTERS.map((s, i) => (
           <div
             key={s.id}
@@ -884,7 +897,7 @@ export const WorldHome = () => {
             className="absolute inset-0 flex items-center justify-center"
             style={{ opacity: 0, pointerEvents: "none" }}
           >
-            <Chapter s={s} load={warm} />
+            <Chapter s={s} load={loadWorld} />
           </div>
         ))}
       </div>
@@ -934,6 +947,9 @@ export const WorldHome = () => {
           opacity: phase === "portal" || (phase === "transition" && !transitionPlaying) ? 1 : 0,
           transition: phase === "world" ? "opacity 0.7s ease" : "opacity 0.15s linear",
           pointerEvents: phase === "portal" ? "auto" : "none",
+          // once the transition has taken over, stop painting the portal
+          // (and its two videos) at all
+          visibility: phase === "transition" && transitionPlaying ? "hidden" : "visible",
         }}
       >
         <video
