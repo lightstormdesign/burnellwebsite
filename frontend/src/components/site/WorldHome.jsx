@@ -29,11 +29,15 @@ import {
 //
 // The world layers are mounted from the start, underneath everything, so
 // they've loaded by the time the video ends and the handoff is just the
-// video fading out over an identical picture.
+// video fading out over an identical picture. They (and the transition and
+// the story photos) only start downloading once the portal is on screen, so
+// the portal gets the connection to itself first.
 
 const DESCENT_SVH = 170; // scroll distance of the descent into the world
 const CHAPTER_SVH = 90; // scroll distance per story chapter
 const TRANSITION_FAILSAFE_MS = 9000;
+const WARM_DELAY_MS = 800; // after the intro starts playing
+const WARM_FALLBACK_MS = 3500; // if it never does (Low Power Mode)
 const SONG_VOLUME = 0.5;
 const SONG_FADE_S = 2.5;
 const EMBLEM = "/burnell-emblem.png";
@@ -51,7 +55,7 @@ const smooth = (t) => t * t * (3 - 2 * t);
 // stay on that page.)
 const CHAPTERS = [...ABOUT_STAGES.filter((s) => s.media || s.bridge), { id: "home-invitation", invitation: true }];
 
-const Chapter = ({ s }) => {
+const Chapter = ({ s, load }) => {
   if (s.invitation) {
     return (
       <div className="relative flex flex-col items-center px-8 text-center">
@@ -78,7 +82,7 @@ const Chapter = ({ s }) => {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center px-6 pt-14 text-center">
       <img
-        src={s.media}
+        src={load ? s.media : undefined}
         alt=""
         className="max-h-[46svh] w-auto max-w-[88%] select-none object-contain"
         style={{ WebkitMaskImage: FEATHER, maskImage: FEATHER }}
@@ -126,6 +130,7 @@ export const WorldHome = () => {
   const [phase, setPhase] = useState("portal"); // portal | transition | world
   const [introDone, setIntroDone] = useState(false);
   const [transitionPlaying, setTransitionPlaying] = useState(false);
+  const [warm, setWarm] = useState(false); // start loading everything past the portal
 
   const introRef = useRef(null);
   const loopRef = useRef(null);
@@ -159,6 +164,13 @@ export const WorldHome = () => {
   useEffect(() => {
     if (introDone && phase === "portal") loopRef.current?.play().catch(() => {});
   }, [introDone, phase]);
+
+  useEffect(() => {
+    if (warm) return;
+    const t = setTimeout(() => setWarm(true), WARM_FALLBACK_MS);
+    return () => clearTimeout(t);
+  }, [warm]);
+  const warmSoon = () => setTimeout(() => setWarm(true), WARM_DELAY_MS);
 
   // No page scroll until the world is entered; scroll-snap only in the world.
   useEffect(() => {
@@ -228,6 +240,7 @@ export const WorldHome = () => {
   const handleTap = () => {
     if (enteringRef.current) return;
     enteringRef.current = true;
+    setWarm(true);
     startSong();
     const v = transitionRef.current;
     if (reduceMotion || !v) {
@@ -326,7 +339,7 @@ export const WorldHome = () => {
             <img
               key={L.key}
               ref={(el) => (layerRefs.current[i] = el)}
-              src={L.src}
+              src={warm ? L.src : undefined}
               alt=""
               decoding="async"
               className={`absolute left-0 top-0 max-w-none select-none ${L.breathe ? "animate-deer-breathe" : ""}`}
@@ -390,7 +403,7 @@ export const WorldHome = () => {
             className="absolute inset-0 flex items-center justify-center"
             style={{ opacity: 0, pointerEvents: "none" }}
           >
-            <Chapter s={s} />
+            <Chapter s={s} load={warm} />
           </div>
         ))}
       </div>
@@ -409,7 +422,7 @@ export const WorldHome = () => {
         src={MEDIA.transition}
         muted
         playsInline
-        preload="auto"
+        preload={warm ? "auto" : "none"}
         onPlaying={() => setTransitionPlaying(true)}
         onEnded={enterWorld}
         tabIndex={-1}
@@ -450,6 +463,7 @@ export const WorldHome = () => {
           muted
           playsInline
           preload="auto"
+          onPlaying={warmSoon}
           onEnded={() => setIntroDone(true)}
           tabIndex={-1}
         />

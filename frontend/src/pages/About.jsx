@@ -233,7 +233,7 @@ export default function About() {
         <img
           data-testid="about-bg-image"
           className="animate-kenburns h-full w-full object-cover"
-          src="/burnell-about-bg.jpg"
+          src="/burnell-about-bg.webp"
           alt=""
           aria-hidden
         />
@@ -441,7 +441,7 @@ export default function About() {
       <div className="relative z-10 bg-black py-24 text-center">
         <span className="overline">From the Canyon</span>
         <div className="mx-auto mt-10 flex max-w-2xl flex-wrap items-center justify-center gap-4 px-6">
-          {["/burnell-cave.jpg", "/burnell-canyon.jpg"].map((src) => (
+          {["/burnell-cave.webp", "/burnell-canyon.webp"].map((src) => (
             <div key={src} className="relative w-72">
               <div
                 aria-hidden

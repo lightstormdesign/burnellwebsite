@@ -31,7 +31,7 @@ export default function Community() {
         className={isMobile ? "fixed inset-x-0 top-0 z-0 overflow-hidden" : "fixed inset-0 z-0 overflow-hidden"}
         style={isMobile ? { height: "58vh" } : undefined}
       >
-        <img src="/burnell-community.jpg" alt="" aria-hidden className="animate-kenburns h-full w-full object-cover" />
+        <img src="/burnell-community.webp" alt="" aria-hidden className="animate-kenburns h-full w-full object-cover" />
         <div aria-hidden className="haze-drift" />
         <div className="absolute inset-0 bg-black/65" />
       </div>

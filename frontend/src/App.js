@@ -1,13 +1,25 @@
 import "@/App.css";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Home from "@/pages/Home";
-import About from "@/pages/About";
-import EPK from "@/pages/EPK";
-import Contact from "@/pages/Contact";
-import Music from "@/pages/Music";
-import Tour from "@/pages/Tour";
-import Community from "@/pages/Community";
+
+// Home ships in the main bundle; every other page loads on its own, and is
+// fetched in the background once Home has had the connection to itself.
+const PAGES = {
+  about: () => import("@/pages/About"),
+  epk: () => import("@/pages/EPK"),
+  contact: () => import("@/pages/Contact"),
+  music: () => import("@/pages/Music"),
+  tour: () => import("@/pages/Tour"),
+  community: () => import("@/pages/Community"),
+};
+const About = lazy(PAGES.about);
+const EPK = lazy(PAGES.epk);
+const Contact = lazy(PAGES.contact);
+const Music = lazy(PAGES.music);
+const Tour = lazy(PAGES.tour);
+const Community = lazy(PAGES.community);
+const PREFETCH_DELAY_MS = 8000;
 import { TrackingPixel } from "@/components/site/TrackingPixel";
 import { GlowCursor } from "@/components/site/GlowCursor";
 import { SacredGeometryField } from "@/components/site/SacredGeometryField";
@@ -22,6 +34,11 @@ function ScrollToTop() {
 }
 
 function App() {
+  useEffect(() => {
+    const t = setTimeout(() => Object.values(PAGES).forEach((load) => load().catch(() => {})), PREFETCH_DELAY_MS);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <div className="App">
       <BrowserRouter>
@@ -30,15 +47,17 @@ function App() {
         <SacredGeometryField />
         <WorldDim />
         <GlowCursor />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/epk" element={<EPK />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/music" element={<Music />} />
-          <Route path="/tour" element={<Tour />} />
-          <Route path="/community" element={<Community />} />
-        </Routes>
+        <Suspense fallback={<div className="min-h-screen bg-black" />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/epk" element={<EPK />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/music" element={<Music />} />
+            <Route path="/tour" element={<Tour />} />
+            <Route path="/community" element={<Community />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </div>
   );

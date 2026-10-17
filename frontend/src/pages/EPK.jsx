@@ -27,7 +27,7 @@ import {
 // so they can be deliberately interleaved below — the previous pass had them
 // clustered as two visually separate blocks (all stage shots, then all
 // candid shots), which read as segmented rather than varied.
-const EPK_PHOTOS = Array.from({ length: 13 }, (_, i) => `/burnell-epk-${String(i + 1).padStart(2, "0")}.jpg`);
+const EPK_PHOTOS = Array.from({ length: 13 }, (_, i) => `/burnell-epk-${String(i + 1).padStart(2, "0")}.webp`);
 
 function seededShuffle(arr, seed) {
   const a = [...arr];

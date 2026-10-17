@@ -37,7 +37,7 @@ export const BIO = [
 // Swappable announcement bubble on the Hero (bottom-right). Points at the
 // featured single for now — swap to the new album when it's ready.
 export const HERO_ANNOUNCEMENT = {
-  image: "/burnell-about-portrait.jpg",
+  image: "/burnell-about-portrait.webp",
   message: "Watch the video for “Beautiful.”",
   linkLabel: "Watch now",
   to: "/music",
@@ -188,10 +188,10 @@ export const MUSIC_VIDEOS = [
 // stills with a slow Ken Burns drift. Audio is null until a trimmed clip of
 // "Beautiful" is prepared.
 export const HOME_MEDIA = {
-  portalImage: "/burnell-portal.jpg",
+  portalImage: "/burnell-portal.webp",
   portalLoop: null,
   transition: null,
-  heroImage: "/burnell-hero.jpg",
+  heroImage: "/burnell-hero.webp",
   heroLoop: null,
   audio: null,
 };
@@ -203,9 +203,9 @@ export const HOME_MEDIA = {
 // every handoff is seamless.
 export const MOBILE_HOME_MEDIA = {
   portalIntro: "/burnell-portal-intro-mobile.mp4",
-  portalIntroPoster: "/burnell-portal-intro-mobile.jpg",
+  portalIntroPoster: "/burnell-portal-intro-mobile.webp",
   portalLoop: "/burnell-portal-loop-mobile.mp4",
-  portalLoopPoster: "/burnell-portal-loop-mobile.jpg",
+  portalLoopPoster: "/burnell-portal-loop-mobile.webp",
   transition: "/burnell-transition-mobile.mp4",
   // "Beautiful", started by the Tap to Enter (half volume)
   song: "/burnell-beautiful.mp3",
@@ -230,7 +230,7 @@ export const WORLD_LAYERS = [
   { key: "meadow", src: "/burnell-world-meadow.webp", w: 1411, start: [-235, 1820], end: [-235, 920], span: [0.25, 1] },
 ];
 
-export const LOGO = "/burnell-logo.png";
+export const LOGO = "/burnell-logo.webp";
 
 export const TRACKING_PIXEL_IDS = {
   metaPixelId: null,
@@ -245,7 +245,7 @@ export const ABOUT_STAGES = [
     kicker: "My Story",
     title: "Where It Began",
     opening: true,
-    media: "/burnell-about-01.jpg",
+    media: "/burnell-about-01.webp",
     body: [
       "I started making music in my bedroom after a deep heartbreak when I was 15. Freestyle rapping and slam poetry were how I made sense of the pain.",
       "I didn’t know it yet, but that heartbreak was a doorway.",
@@ -261,7 +261,7 @@ export const ABOUT_STAGES = [
   {
     id: "the-craft",
     title: "The Craft",
-    media: "/burnell-about-02.jpg",
+    media: "/burnell-about-02.webp",
     body: [
       "I taught myself how to produce beats and record, and started performing at open mic nights. What began as a way to process my emotions quickly became a devotion — full-length albums, collaborations with local artists, and a whole lot of nights on small stages.",
     ],
@@ -270,7 +270,7 @@ export const ABOUT_STAGES = [
   {
     id: "the-rise",
     title: "The Rise",
-    media: "/burnell-about-03.jpg",
+    media: "/burnell-about-03.webp",
     body: [
       "Within a few short years I was hosting my own events, opening for huge names, and getting invited on tour with underground hip hop legends. I’ve shared stages with heroes like Snoop Dogg, Mac Miller, Wu-Tang Clan, Nas, and Atmosphere — and I’ve been releasing music and prayerforming regularly since 2009.",
     ],
@@ -279,7 +279,7 @@ export const ABOUT_STAGES = [
   {
     id: "the-service",
     title: "Sacred Service",
-    media: "/burnell-about-04.jpg",
+    media: "/burnell-about-04.webp",
     body: [
       "I make music because it hurts not to. It’s my favorite way to transmute and alchemize what I feel, and it feels like a sacred service to humanity. I sing for the children, the plants, the animals, and all of humanity.",
     ],
@@ -288,7 +288,7 @@ export const ABOUT_STAGES = [
   {
     id: "today",
     title: "Today",
-    media: "/burnell-about-05.jpg",
+    media: "/burnell-about-05.webp",
     body: [
       "Through the grace of God, I get to do what I love — travel the world, work with my heroes, and make amazing friends everywhere I go. I got here with the support of my fans, friends, community, mentors, and the Most High.",
     ],
@@ -296,7 +296,7 @@ export const ABOUT_STAGES = [
   },
   {
     id: "portrait",
-    media: "/burnell-about-portrait.jpg",
+    media: "/burnell-about-portrait.webp",
     body: ["We are one with nature. We are divine, powerful beings. And this existence is truly a magical gift."],
     showChevron: true,
   },
