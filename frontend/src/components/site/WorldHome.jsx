@@ -67,7 +67,7 @@ const BEAT_FPS = 30;
 const EMBLEM = "/burnell-emblem.png";
 const EMBLEM_DEPTH = 7; // stacked copies behind the face, 1px apart
 const LANDING_EARLY_S = 1.3; // the B starts fading in this long before the transition ends
-const STALL_MS = 700; // transition frozen this long: kick it (a few times), then move on
+const STALL_MS = 1200; // transition's clock stuck this long: kick it once, then move on
 const TILT_X = 40; // canvas px of sideways shift at full tilt, nearest layer
 const TILT_Y = 26;
 
@@ -338,6 +338,7 @@ export const WorldHome = () => {
   const songRef = useRef(null);
   const beatMapRef = useRef(null); // Uint8Array, one value per 1/30s of the song
   const phaseRef = useRef("portal");
+  const canvasRef = useRef(null);
   const [songOn, setSongOn] = useState(false);
   const mutedRef = useRef(false); // they turned the music off themselves
   const primingRef = useRef(false);
@@ -495,6 +496,53 @@ export const WorldHome = () => {
       .catch(() => {});
   }, [warm]);
 
+  // During the transition, copy each new video frame onto the canvas.
+  useEffect(() => {
+    if (phase !== "transition") return;
+    const v = transitionRef.current;
+    const c = canvasRef.current;
+    const ctx = c?.getContext("2d", { alpha: false });
+    if (!v || !ctx) return;
+    let raf = 0;
+    let lastT = -1;
+    let draws = 0;
+    let shown = false;
+    let lastLog = performance.now();
+    const draw = () => {
+      // only when the video has moved on by about a frame (it's 30fps; the
+      // screen may be 60 or 120)
+      if (v.readyState >= 2 && (lastT < 0 || Math.abs(v.currentTime - lastT) >= 0.028)) {
+        lastT = v.currentTime;
+        try {
+          if (c.width !== v.videoWidth) {
+            c.width = v.videoWidth;
+            c.height = v.videoHeight;
+          }
+          ctx.drawImage(v, 0, 0, c.width, c.height);
+          draws++;
+          if (!shown) {
+            shown = true;
+            c.style.visibility = "visible";
+          }
+        } catch (e) {
+          // couldn't draw it: leave the video itself on screen
+          dlog(`canvas draw failed: ${e.name}`);
+          c.style.visibility = "hidden";
+          return;
+        }
+      }
+      const now = performance.now();
+      if (debug && now - lastLog > 1000) {
+        dlog(`canvas ${draws} frames/s at t=${v.currentTime.toFixed(2)}`);
+        draws = 0;
+        lastLog = now;
+      }
+      raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(raf);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // No page scroll until the world is entered; scroll-snap only in the world.
   useEffect(() => {
     const root = document.documentElement;
@@ -532,24 +580,15 @@ export const WorldHome = () => {
       v.play().catch(enterWorld);
     });
 
-  // Keeps the transition moving. iOS can pause a playing video, or keep its
-  // clock running while the picture stops updating, when audio starts or a
-  // system prompt appears. Every 250ms: if it was paused, resume it; if no
-  // new frame has reached the screen for a moment, re-seek in place to kick
-  // the decoder. If it's still frozen after a few tries, move on to the
-  // world rather than sit on a frozen frame.
+  // Keeps the transition moving. Every 250ms: if iOS paused it, resume it;
+  // if its clock has stopped, re-seek in place once to kick it, and if it's
+  // still stuck, move on to the world rather than sit on a frozen frame.
+  // (A picture that freezes while the clock runs is handled by drawing the
+  // frames onto the canvas instead.)
   const watchStall = (v) => {
     let lastT = -1;
     let lastMoveAt = performance.now();
-    let lastFrameAt = 0; // from requestVideoFrameCallback, once it's proven to fire
-    let frames = 0;
     let kicks = 0;
-    const onFrame = () => {
-      frames++;
-      if (frames >= 5) lastFrameAt = performance.now();
-      if (!v.ended) v.requestVideoFrameCallback(onFrame);
-    };
-    if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(onFrame);
     clearInterval(stallRef.current);
     stallRef.current = setInterval(() => {
       if (v.ended) return clearInterval(stallRef.current);
@@ -562,21 +601,17 @@ export const WorldHome = () => {
         lastT = v.currentTime;
         lastMoveAt = now;
       }
-      // frozen = the clock stopped, or (where frame reports work) the
-      // picture stopped while the clock kept going
-      const frozenFor = Math.max(now - lastMoveAt, lastFrameAt ? now - lastFrameAt : 0);
-      if (frozenFor < STALL_MS) return;
+      if (now - lastMoveAt < STALL_MS) return;
       if (kicks < 1) {
         kicks++;
-        dlog(`frozen ${Math.round(frozenFor)}ms at ${v.currentTime.toFixed(2)}s: kick ${kicks}`);
+        dlog(`stuck at ${v.currentTime.toFixed(2)}s: kick`);
         lastMoveAt = now;
-        if (lastFrameAt) lastFrameAt = now;
         try {
           v.currentTime = v.currentTime + 0.001;
         } catch (e) {}
         v.play().catch(() => {});
       } else {
-        dlog("still frozen: on to the world");
+        dlog("still stuck: on to the world");
         enterWorld();
       }
     }, 250);
@@ -932,6 +967,22 @@ export const WorldHome = () => {
         }}
         onEnded={enterWorld}
         tabIndex={-1}
+      />
+      {/* What's actually seen during the transition: its frames copied onto a
+          canvas. iOS sometimes stops putting the video itself on screen
+          partway (its clock runs on, it even seeks, but the picture stays
+          frozen); drawing the frames ourselves doesn't go through that. The
+          video stays underneath as the fallback. */}
+      <canvas
+        ref={canvasRef}
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 z-30 w-full object-cover"
+        style={{
+          height: "100lvh",
+          visibility: "hidden",
+          opacity: phase === "world" ? 0 : 1,
+          transition: phase === "world" && transitionPlaying ? "opacity 0.7s ease" : "none",
+        }}
       />
 
       {/* Portal: intro, then hold loop, until the tap (and until the
