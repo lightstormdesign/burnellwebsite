@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { NAV_LINKS, ARTIST_NAME, LOGO } from "@/data/site";
@@ -23,6 +23,10 @@ const NavLink = ({ to, label, active, testId, mobile }) => (
   </Link>
 );
 
+// The menu icon fades in with the rest of the portal, but only the first
+// time the portal shows in a visit (not when coming back to Home).
+let portalFadeDone = false;
+
 export const Navbar = () => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -32,6 +36,10 @@ export const Navbar = () => {
   // black header treatment with no wordmark; every other mobile page (and
   // desktop everywhere) keeps a normal header bar.
   const isPortalHero = isMobile && isHome;
+  const [fadeIn] = useState(() => isPortalHero && !portalFadeDone && !window.location.hash);
+  useEffect(() => {
+    if (isPortalHero) portalFadeDone = true;
+  }, [isPortalHero]);
 
   return (
     // Fixed headers don't reserve document-flow space, so anything that
@@ -46,7 +54,7 @@ export const Navbar = () => {
       data-testid="site-navbar"
       className={
         isPortalHero
-          ? "fixed inset-x-0 top-0 z-50"
+          ? `${fadeIn ? "animate-ui-in " : ""}fixed inset-x-0 top-0 z-50`
           : isMobile
             ? "fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black"
             : "fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-xl"

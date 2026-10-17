@@ -25,6 +25,7 @@ const OnlyHueman = lazy(PAGES.onlyHueman);
 const PREFETCH_DELAY_MS = 8000;
 import { TrackingPixel } from "@/components/site/TrackingPixel";
 import { GlowCursor } from "@/components/site/GlowCursor";
+import { TouchRipples } from "@/components/site/TouchRipples";
 import { SacredGeometryField } from "@/components/site/SacredGeometryField";
 import { WorldDim } from "@/components/site/WorldDim";
 
@@ -58,6 +59,7 @@ function App() {
         <SacredGeometryField />
         <WorldDim />
         <GlowCursor />
+        <TouchRipples />
         <Suspense fallback={<div className="min-h-screen bg-black" />}>
           <Routes>
             <Route path="/" element={<Home />} />

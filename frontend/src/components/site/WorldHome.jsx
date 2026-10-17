@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnnouncementBubble } from "@/components/site/AnnouncementBubble";
-import { Volume2, VolumeOff } from "lucide-react";
+import { ChevronDown, Volume2, VolumeOff } from "lucide-react";
+import { useTilt } from "@/hooks/useTilt";
 import {
   ABOUT_STAGES,
   ARTIST_NAME,
@@ -34,6 +35,11 @@ import {
 //               scroll-snap), while the world keeps drifting toward you, each
 //               layer growing at its own rate, so it never stops being 3D.
 //
+// Alive on top of that: birds cross the sky, a trout leaps in the stream,
+// butterflies drift over the meadow (CREATURES, placed in the coordinates of
+// the layer they live in, so they move with it); the layers shift with the
+// phone's tilt; and the B's glow follows the bass of the song.
+//
 // About in the menu (/#story) skips straight here and glides down to the
 // first chapter: the story lives on the Home page now.
 //
@@ -57,6 +63,121 @@ const SONG_VOLUME = 0.5;
 const SONG_FADE_S = 2.5;
 const EMBLEM = "/burnell-emblem.png";
 const EMBLEM_DEPTH = 7; // stacked copies behind the face, 1px apart
+const LANDING_EARLY_S = 1.3; // the B starts fading in this long before the transition ends
+const STALL_MS = 2000; // transition stuck this long: nudge it, then move on
+const TILT_X = 40; // canvas px of sideways shift at full tilt, nearest layer
+const TILT_Y = 26;
+
+// Creatures. Coordinates are in the space of the layer each one lives in
+// (so it rides along with that layer through the descent, the story zoom
+// and the tilt). `pose(t, p)` gives where it is at time t (seconds) and
+// descent progress p, or null when it's off stage.
+const BIRD = { up: "/burnell-world-bird-up.webp", down: "/burnell-world-bird-down.webp" };
+const FISH = "/burnell-world-fish.webp";
+const BUTTERFLY = "/burnell-world-butterfly.webp";
+const FAR_FLOCK = [[0, 0], [-56, -22], [-56, 24], [-112, -42], [-110, 46]];
+const NEAR_FLOCK = [[0, 0], [95, -34], [108, 40]];
+const FISH_CYCLE_S = 7.5;
+const FISH_LEAP_S = 1.35;
+const FISH_FROM = [400, 925];
+const FISH_TO = [560, 930];
+const RIPPLE_S = 1.2;
+const CREATURES = [
+  // a far flock drifting across the high sky, small and slow
+  ...FAR_FLOCK.map(([dx, dy], i) => ({
+    id: `far-${i}`,
+    kind: "bird",
+    layer: "mountains",
+    w: 44,
+    flap: 0.3 + i * 0.035,
+    pose: (t) => {
+      const u = (t / 34 + 0.12) % 1;
+      return { x: -140 + u * 1240 + dx, y: 240 + dy + 7 * Math.sin(t * 1.1 + i) };
+    },
+  })),
+  // a near flock sweeping the other way now and then, bigger and faster
+  ...NEAR_FLOCK.map(([dx, dy], i) => ({
+    id: `near-${i}`,
+    kind: "bird",
+    flip: true,
+    layer: "forest-near",
+    w: 84,
+    flap: 0.26 + i * 0.04,
+    pose: (t) => {
+      const u = ((t + 4) % 24) / 11;
+      if (u > 1) return null;
+      return { x: 1150 - u * 1500 + dx, y: 190 + dy + 10 * Math.sin(t * 1.5 + i) };
+    },
+  })),
+  // the trout: leaps from the pool, arcs, dives back in (once you've landed)
+  {
+    id: "fish",
+    kind: "fish",
+    layer: "stream",
+    w: 105,
+    pose: (t, p) => {
+      const u = (t % FISH_CYCLE_S) / FISH_LEAP_S;
+      if (p < 0.75 || u > 1) return null;
+      return {
+        x: FISH_FROM[0] + (FISH_TO[0] - FISH_FROM[0]) * u,
+        y: FISH_FROM[1] - 440 * u * (1 - u),
+        rot: -15 + 100 * u,
+        op: Math.min(1, u / 0.08, (1 - u) / 0.08),
+      };
+    },
+  },
+  // its splashes: a ripple where it leaves the water and where it lands
+  ...[
+    [FISH_FROM, 0],
+    [FISH_TO, FISH_LEAP_S - 0.05],
+  ].map(([[x, y], start], i) => ({
+    id: `ripple-${i}`,
+    kind: "ripple",
+    layer: "stream",
+    w: 130,
+    pose: (t, p) => {
+      const r = ((t % FISH_CYCLE_S) - start) / RIPPLE_S;
+      if (p < 0.75 || r < 0 || r > 1) return null;
+      return { x, y: y + 4, scale: 0.25 + 0.95 * r, op: (1 - r) * 0.9 };
+    },
+  })),
+  // two butterflies wandering over the meadow
+  ...[
+    [415, 330, 0],
+    [995, 380, 2.1],
+  ].map(([cx, cy, ph], i) => ({
+    id: `butterfly-${i}`,
+    kind: "butterfly",
+    layer: "meadow",
+    w: 46,
+    pose: (t) => ({
+      x: cx + 60 * Math.sin(t * 0.55 + ph) + 18 * Math.sin(t * 1.7 + ph),
+      y: cy + 32 * Math.sin(t * 0.85 + ph * 2),
+      rot: 10 * Math.cos(t * 0.55 + ph),
+    }),
+  })),
+];
+
+const Creature = ({ c, load, refFn }) => (
+  <div ref={refFn} className="creature" style={{ opacity: 0 }}>
+    <div className="creature-body">
+      {c.kind === "bird" && (
+        <div className="bird-frames" style={{ "--flap": `${c.flap}s`, transform: c.flip ? "scaleX(-1)" : undefined }}>
+          <img className="bird-up" src={load ? BIRD.up : undefined} alt="" />
+          <img className="bird-down" src={load ? BIRD.down : undefined} alt="" />
+        </div>
+      )}
+      {c.kind === "fish" && <img src={load ? FISH : undefined} alt="" className="block w-full" />}
+      {c.kind === "butterfly" && <img src={load ? BUTTERFLY : undefined} alt="" className="butterfly-wings block w-full" />}
+      {c.kind === "ripple" && (
+        <div className="relative w-full" style={{ aspectRatio: "3.2 / 1" }}>
+          <span className="ripple-ring" style={{ transform: "translate(-50%, -50%)" }} />
+          <span className="ripple-ring" style={{ transform: "translate(-50%, -50%) scale(0.55)", opacity: 0.8 }} />
+        </div>
+      )}
+    </div>
+  </div>
+);
 
 const FEATHER = "radial-gradient(ellipse 72% 76% at 50% 50%, #000 40%, rgba(0,0,0,0.35) 72%, transparent 100%)";
 // soft dark pool behind chapter text so it reads over the painted world
@@ -153,6 +274,9 @@ const Chapter = ({ s, load }) => {
 
 // The B, glowing and turning slowly in 3D. Darkened copies stacked behind
 // the face give it thickness as it turns.
+// It also leans with the phone's tilt (--tilt-x/--tilt-y) and flares with
+// the bass of the song (--beat): a brighter, blurred copy of the B and a
+// second halo, both following --beat.
 const Emblem3D = () => (
   <div className="relative" style={{ perspective: "700px" }}>
     <div
@@ -160,7 +284,18 @@ const Emblem3D = () => (
       className="animate-emblem-halo absolute left-1/2 top-1/2 h-[170%] w-[170%] -translate-x-1/2 -translate-y-1/2 rounded-full"
       style={{ background: "radial-gradient(circle, rgba(214,179,101,0.32) 0%, rgba(214,179,101,0.1) 40%, transparent 68%)" }}
     />
-    <div className="animate-emblem-sway relative w-[clamp(7.5rem,36vw,10rem)]">
+    <div
+      aria-hidden
+      className="beat-halo absolute left-1/2 top-1/2 h-[190%] w-[190%] rounded-full"
+      style={{ background: "radial-gradient(circle, rgba(255,226,160,0.42) 0%, rgba(214,179,101,0.14) 38%, transparent 66%)" }}
+    />
+    <div
+      style={{
+        transformStyle: "preserve-3d",
+        transform: "rotateY(calc(var(--tilt-x, 0) * 16deg)) rotateX(calc(var(--tilt-y, 0) * -12deg))",
+      }}
+    >
+    <div className="animate-emblem-sway relative w-[clamp(6.5rem,min(36vw,18svh),10rem)]">
       {Array.from({ length: EMBLEM_DEPTH }, (_, i) => (
         <img
           key={i}
@@ -171,7 +306,9 @@ const Emblem3D = () => (
           style={{ transform: `translateZ(${-(EMBLEM_DEPTH - i)}px)`, filter: `brightness(${0.3 + (0.25 * i) / EMBLEM_DEPTH}) sepia(0.6)` }}
         />
       ))}
+      <img src={EMBLEM} alt="" aria-hidden className="beat-glow absolute inset-0 h-auto w-full" />
       <img src={EMBLEM} alt={ARTIST_NAME} className="animate-emblem-glow relative h-auto w-full" style={{ transform: "translateZ(0.5px)" }} />
+    </div>
     </div>
   </div>
 );
@@ -201,6 +338,12 @@ export const WorldHome = () => {
   const primingRef = useRef(false);
   const pendingStoryRef = useRef(false);
   const introEndedRef = useRef(false);
+  const creatureRefs = useRef([]);
+  const blobUrlRef = useRef(null);
+  const songOnRef = useRef(false);
+  const stallRef = useRef(null);
+  const [landingEarly, setLandingEarly] = useState(false);
+  const { tilt, enable: enableTilt } = useTilt();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -238,15 +381,51 @@ export const WorldHome = () => {
 
   // Once the portal is up, get the loop and the transition decoded and
   // ready so neither has to load when it's needed.
+  //
+  // The transition is downloaded whole first (into memory) and played from
+  // there, so it can never stall halfway waiting on the network. If it's
+  // tapped before that finishes, it just plays from the network.
   useEffect(() => {
     if (!warm) return;
     prime(loopRef.current, () => !introEndedRef.current);
-    primingRef.current = true;
-    prime(transitionRef.current, () => {
-      primingRef.current = false;
-      return !enteringRef.current;
-    });
+    const primeTransition = () => {
+      primingRef.current = true;
+      prime(transitionRef.current, () => {
+        primingRef.current = false;
+        return !enteringRef.current;
+      });
+    };
+    let cancelled = false;
+    fetch(MEDIA.transition)
+      .then((r) => (r.ok ? r.blob() : Promise.reject()))
+      .then((blob) => {
+        const v = transitionRef.current;
+        if (cancelled || enteringRef.current || !v) return;
+        blobUrlRef.current = URL.createObjectURL(blob);
+        v.src = blobUrlRef.current;
+        primeTransition();
+      })
+      .catch(() => !cancelled && !enteringRef.current && primeTransition());
+    return () => {
+      cancelled = true;
+    };
   }, [warm]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(
+    () => () => {
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+      clearInterval(stallRef.current);
+    },
+    []
+  );
+
+  // Once the transition is on screen, stop the portal videos underneath it
+  // (fewer videos decoding at once, so the transition stays smooth).
+  useEffect(() => {
+    if (!transitionPlaying) return;
+    introRef.current?.pause();
+    loopRef.current?.pause();
+  }, [transitionPlaying]);
 
   useEffect(() => {
     if (warm) return;
@@ -279,7 +458,43 @@ export const WorldHome = () => {
 
   const enterWorld = () => {
     clearTimeout(failsafeRef.current);
+    clearInterval(stallRef.current);
     setPhase("world");
+  };
+
+  // Play the transition; if the in-memory copy won't play, fall back to the
+  // network copy once before giving up and going straight to the world.
+  const playTransition = (v) =>
+    v.play().catch(() => {
+      if (!v.src.startsWith("blob:")) return enterWorld();
+      v.src = MEDIA.transition;
+      v.play().catch(enterWorld);
+    });
+
+  // If the transition stops moving mid-play, nudge it once; if it's still
+  // stuck, go on to the world rather than sit on a frozen frame.
+  const watchStall = (v) => {
+    let lastT = -1;
+    let stuckFor = 0;
+    let nudged = false;
+    clearInterval(stallRef.current);
+    stallRef.current = setInterval(() => {
+      if (v.ended) return clearInterval(stallRef.current);
+      if (v.currentTime !== lastT) {
+        lastT = v.currentTime;
+        stuckFor = 0;
+        return;
+      }
+      stuckFor += 250;
+      if (stuckFor < STALL_MS) return;
+      if (!nudged) {
+        nudged = true;
+        stuckFor = 0;
+        v.play().catch(() => {});
+      } else {
+        enterWorld();
+      }
+    }, 250);
   };
 
   // "Beautiful" at half volume. iOS ignores media.volume, so the volume is
@@ -295,15 +510,26 @@ export const WorldHome = () => {
         const gain = ctx.createGain();
         gain.gain.setValueAtTime(0, ctx.currentTime);
         gain.gain.linearRampToValueAtTime(SONG_VOLUME, ctx.currentTime + SONG_FADE_S);
-        ctx.createMediaElementSource(el).connect(gain).connect(ctx.destination);
-        audioRef.current = { ctx, gain };
+        const src = ctx.createMediaElementSource(el);
+        src.connect(gain).connect(ctx.destination);
+        // the B's glow follows the bass: read the song's spectrum every frame
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 512;
+        analyser.smoothingTimeConstant = 0.6;
+        src.connect(analyser);
+        audioRef.current = { ctx, gain, analyser, bins: new Uint8Array(analyser.frequencyBinCount) };
       }
       audioRef.current?.ctx.resume();
     } catch (e) {
       audioRef.current = null;
     }
     if (!audioRef.current) el.volume = SONG_VOLUME;
-    el.play().then(() => setSongOn(true)).catch(() => {});
+    el.play()
+      .then(() => {
+        songOnRef.current = true;
+        setSongOn(true);
+      })
+      .catch(() => {});
   };
 
   const toggleSong = () => {
@@ -312,6 +538,7 @@ export const WorldHome = () => {
     if (songOn) {
       mutedRef.current = true;
       el.pause();
+      songOnRef.current = false;
       setSongOn(false);
     } else {
       mutedRef.current = false;
@@ -355,6 +582,7 @@ export const WorldHome = () => {
     primingRef.current = false;
     setWarm(true);
     if (!mutedRef.current && !songOn) startSong();
+    enableTilt(); // iOS asks permission for motion here, inside the tap
     const v = transitionRef.current;
     if (reduceMotion || !v) {
       enterWorld();
@@ -367,7 +595,8 @@ export const WorldHome = () => {
     // already running (tapped while it was being primed): no new
     // "playing" event will come, so hand off from here
     if (!v.paused) afterFirstFrame(v, () => setTransitionPlaying(true));
-    v.play().catch(enterWorld);
+    playTransition(v);
+    watchStall(v);
     failsafeRef.current = setTimeout(enterWorld, TRANSITION_FAILSAFE_MS);
   };
 
@@ -381,6 +610,14 @@ export const WorldHome = () => {
     let last = performance.now();
     let ys = window.scrollY;
     let lastKey = "";
+    let tx = 0;
+    let ty = 0;
+    let beat = 0;
+    let bassAvg = 0;
+    let fit = null; // { k, ox, oy } from the last layout
+    const placed = {}; // layer key -> { gx, gy, g } in canvas px
+    const root = document.documentElement;
+    const t0 = performance.now();
 
     const frame = (now) => {
       const dt = Math.min(0.05, (now - last) / 1000);
@@ -396,14 +633,25 @@ export const WorldHome = () => {
         const H = stage.clientHeight;
         const D = anchors[1].offsetTop;
         const C = anchors[2].offsetTop - D;
-        const key = `${W}|${H}|${ys.toFixed(1)}|${target}`;
+        // phone tilt, eased so it glides rather than jitters
+        tx += (tilt.current.x - tx) * 0.08;
+        ty += (tilt.current.y - ty) * 0.08;
+        const key = `${W}|${H}|${ys.toFixed(1)}|${target}|${tx.toFixed(3)}|${ty.toFixed(3)}`;
         if (key !== lastKey) {
           const sizeChanged = !lastKey.startsWith(`${W}|${H}|`);
+          root.style.setProperty("--tilt-x", tx.toFixed(3));
+          root.style.setProperty("--tilt-y", ty.toFixed(3));
           lastKey = key;
           // cover-fit the painted canvas, centered (same fit as the video)
           const k = Math.max(W / WORLD_CANVAS.width, H / WORLD_CANVAS.height);
           const ox = (W - WORLD_CANVAS.width * k) / 2;
           const oy = (H - WORLD_CANVAS.height * k) / 2;
+          fit = { k, ox, oy, p: clamp01(ys / D) };
+          if (sizeChanged)
+            CREATURES.forEach((c, i) => {
+              const el = creatureRefs.current[i];
+              if (el) el.style.width = `${(c.w * k).toFixed(1)}px`;
+            });
           const p = clamp01(ys / D);
           // story: 0 at the end of the descent, 1 at the last chapter
           const z = clamp01((ys - D) / (C * CHAPTERS.length));
@@ -418,8 +666,12 @@ export const WorldHome = () => {
             // slide past each other like you're moving into the world
             const g = 1 + L.depth * STORY_ZOOM * z;
             const [ax, ay] = L.anchor || ZOOM_CENTER;
-            const gx = ax + (x - ax) * g;
-            const gy = ay + (y - ay) * g;
+            // tilt: far layers slide one way, near ones the other, around
+            // the middle distance (the sky never moves up or down, so its
+            // edges never show)
+            const gx = ax + (x - ax) * g + tx * (L.depth - 0.3) * TILT_X;
+            const gy = ay + (y - ay) * g + ty * Math.max(0, L.depth - 0.1) * TILT_Y;
+            placed[L.key] = { gx, gy, g };
             el.style.transform = `translate3d(${(ox + gx * k).toFixed(1)}px, ${(oy + gy * k).toFixed(1)}px, 0) scale(${g.toFixed(4)})`;
           });
 
@@ -448,13 +700,50 @@ export const WorldHome = () => {
           });
         }
       }
+      // creatures: every frame, in the space of the layer each lives in
+      if (fit && !reduceMotion) {
+        const t = (now - t0) / 1000;
+        CREATURES.forEach((c, i) => {
+          const el = creatureRefs.current[i];
+          const at = placed[c.layer];
+          if (!el || !at) return;
+          const pose = c.pose(t, fit.p);
+          if (!pose) {
+            if (el.style.opacity !== "0") el.style.opacity = "0";
+            return;
+          }
+          const sx = fit.ox + (at.gx + pose.x * at.g) * fit.k;
+          const sy = fit.oy + (at.gy + pose.y * at.g) * fit.k;
+          el.style.opacity = (pose.op ?? 1).toFixed(3);
+          el.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0) scale(${(at.g * (pose.scale ?? 1)).toFixed(4)}) rotate(${(pose.rot ?? 0).toFixed(1)}deg)`;
+        });
+      }
+
+      // the beat: bass energy against its own running average, so it
+      // flares on kicks whatever the song's overall loudness
+      const a = audioRef.current;
+      if (a?.analyser && songOnRef.current) {
+        a.analyser.getByteFrequencyData(a.bins);
+        const bass = (a.bins[1] + a.bins[2] + a.bins[3] + a.bins[4]) / (4 * 255);
+        bassAvg += (bass - bassAvg) * 0.03;
+        const hit = clamp01((bass - bassAvg * 0.95) / 0.16);
+        beat = Math.max(hit, beat * 0.9);
+      } else {
+        beat *= 0.9;
+      }
+      root.style.setProperty("--beat", beat.toFixed(3));
+
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+    return () => {
+      cancelAnimationFrame(raf);
+      root.style.removeProperty("--beat");
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const inWorld = phase === "world";
+  const showLanding = inWorld || landingEarly;
   const snap = { scrollSnapAlign: "start", position: "absolute", left: 0, height: 1, width: 1 };
 
   return (
@@ -463,15 +752,20 @@ export const WorldHome = () => {
       <div ref={stageRef} className="fixed inset-x-0 top-0 z-10 overflow-hidden bg-black" style={{ height: "100lvh" }} aria-hidden>
         <div ref={blurRef} className="absolute inset-0" style={{ filter: "blur(6px)" }}>
           {WORLD_LAYERS.map((L, i) => (
-            <img
-              key={L.key}
-              ref={(el) => (layerRefs.current[i] = el)}
-              src={warm ? L.src : undefined}
-              alt=""
-              decoding="async"
-              className="absolute left-0 top-0 max-w-none select-none"
-              style={{ willChange: "transform", transformOrigin: "0 0" }}
-            />
+            <Fragment key={L.key}>
+              <img
+                ref={(el) => (layerRefs.current[i] = el)}
+                src={warm ? L.src : undefined}
+                alt=""
+                decoding="async"
+                className="absolute left-0 top-0 max-w-none select-none"
+                style={{ willChange: "transform", transformOrigin: "0 0" }}
+              />
+              {/* the fish swims in front of the stream but behind the boulders */}
+              {CREATURES.map((c, ci) =>
+                c.layer === L.key ? <Creature key={c.id} c={c} load={warm} refFn={(el) => (creatureRefs.current[ci] = el)} /> : null
+              )}
+            </Fragment>
           ))}
         </div>
         <div ref={shadeRef} className="absolute inset-0 bg-black" style={{ opacity: 0.5 }} />
@@ -480,23 +774,24 @@ export const WorldHome = () => {
       {/* Landing, over the blurred world: the B, the tagline, a scroll cue */}
       <div
         ref={landingRef}
-        className="pointer-events-none fixed inset-x-0 top-0 z-20 px-6 text-center"
-        style={{ height: "100svh", visibility: inWorld ? "visible" : "hidden" }}
+        // above the transition video, so the B can rise over its last moment
+        className="pointer-events-none fixed inset-x-0 top-0 z-[35] px-6 text-center"
+        style={{ height: "100svh", visibility: showLanding ? "visible" : "hidden" }}
       >
-        <div className="flex h-full flex-col items-center justify-center pb-[4svh]">
+        <div className="flex h-full flex-col items-center justify-center pb-[22svh]">
           <div
             style={{
-              opacity: inWorld ? 1 : 0,
-              transform: inWorld ? "none" : "scale(0.86)",
-              filter: inWorld ? "none" : "blur(10px)",
-              transition: "opacity 1.6s ease 0.3s, transform 2.2s cubic-bezier(0.16,1,0.3,1) 0.3s, filter 1.6s ease 0.3s",
+              opacity: showLanding ? 1 : 0,
+              transform: showLanding ? "none" : "scale(0.86)",
+              filter: showLanding ? "none" : "blur(10px)",
+              transition: "opacity 1.5s ease, transform 2.2s cubic-bezier(0.16,1,0.3,1), filter 1.5s ease",
             }}
           >
             <Emblem3D />
           </div>
           <div
             className="flex flex-col items-center"
-            style={{ opacity: inWorld ? 1 : 0, transform: inWorld ? "none" : "translateY(10px)", transition: "opacity 1.4s ease 1.4s, transform 1.4s ease 1.4s" }}
+            style={{ opacity: showLanding ? 1 : 0, transform: showLanding ? "none" : "translateY(10px)", transition: "opacity 1.4s ease 0.5s, transform 1.4s ease 0.5s" }}
           >
             <p className="font-display text-metallic-grad mt-10 text-[1.7rem] leading-tight" style={{ textWrap: "balance" }}>
               {HERO_TAGLINE}
@@ -507,15 +802,24 @@ export const WorldHome = () => {
             </p>
           </div>
         </div>
+        {/* Scroll cue: a capsule with a gold drop falling through it and a
+            cascade of chevrons, under a clear label */}
         <div
-          className="absolute inset-x-0 bottom-[6svh] flex flex-col items-center"
-          style={{ opacity: inWorld ? 1 : 0, transition: "opacity 1.2s ease 2.4s" }}
+          className="absolute inset-x-0 bottom-[88px] flex justify-center"
+          style={{ opacity: showLanding ? 1 : 0, transition: "opacity 1.2s ease 1.6s" }}
         >
-          <span className="font-cinzel text-[0.6rem] uppercase tracking-[0.45em] text-[var(--sm-gold-light)] text-legible" style={{ marginRight: "-0.45em" }}>
-            Scroll
-          </span>
-          <div className="relative mt-3 h-10 w-px overflow-hidden bg-gradient-to-b from-white/35 to-white/0">
-            <span className="animate-scroll-drop absolute left-1/2 top-0 block h-2 w-[3px] -translate-x-1/2 rounded-full bg-[var(--sm-gold-light)]" style={{ boxShadow: "0 0 6px rgba(240,210,140,0.9)" }} />
+          <div className="animate-cue-bob relative flex flex-col items-center">
+            <div aria-hidden className="absolute left-1/2 top-1/2 -z-10 h-[150%] w-[200%] -translate-x-1/2 -translate-y-1/2" style={{ background: TEXT_POOL, filter: "blur(12px)" }} />
+            <span className="font-cinzel text-[0.66rem] uppercase tracking-[0.34em] text-[var(--sm-gold-light)] text-legible" style={{ marginRight: "-0.34em" }}>
+              Scroll to Explore
+            </span>
+            <div className="scroll-capsule mt-3">
+              <span className="scroll-capsule-drop" />
+            </div>
+            <div className="mt-1 flex flex-col items-center text-[var(--sm-gold-light)]" aria-hidden>
+              <ChevronDown size={16} className="chevron-cascade -mb-2.5" />
+              <ChevronDown size={16} className="chevron-cascade" style={{ animationDelay: "0.25s" }} />
+            </div>
           </div>
         </div>
         {/* New release, bottom-left; fades with the rest of the landing */}
@@ -560,6 +864,10 @@ export const WorldHome = () => {
         onPlaying={(e) => {
           if (primingRef.current || !enteringRef.current) return;
           afterFirstFrame(e.currentTarget, () => setTransitionPlaying(true));
+        }}
+        onTimeUpdate={(e) => {
+          const v = e.currentTarget;
+          if (!landingEarly && enteringRef.current && v.duration && v.duration - v.currentTime <= LANDING_EARLY_S) setLandingEarly(true);
         }}
         onEnded={enterWorld}
         tabIndex={-1}
@@ -608,16 +916,19 @@ export const WorldHome = () => {
           className="absolute inset-0 flex flex-col items-center"
           style={{ opacity: phase === "portal" ? 1 : 0, transition: "opacity 0.3s ease" }}
         >
-          <div aria-hidden className="absolute inset-x-0 top-0 h-[34%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
-          <div aria-hidden className="absolute inset-x-0 bottom-0 h-[24%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)" }} />
+          {/* Everything fades in over the opening seconds: the shading,
+              then the logo out of a soft blur, then Tap to Enter opening up
+              (which also buys the transition time to load) */}
+          <div aria-hidden className="animate-cine-shade absolute inset-x-0 top-0 h-[34%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
+          <div aria-hidden className="animate-cine-shade absolute inset-x-0 bottom-0 h-[24%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)" }} />
           <div className="relative mt-[12svh] flex w-full flex-col items-center">
-            <img src={LOGO} alt={ARTIST_NAME} className="gold-glow w-[78%] max-w-[22rem]" />
+            <img src={LOGO} alt={ARTIST_NAME} className="animate-cine-logo gold-glow w-[78%] max-w-[22rem]" />
             <span className="mt-5 flex items-center gap-3 text-[var(--sm-gold-light)]" style={{ animation: "breathe 3.2s ease-in-out infinite" }}>
-              <span aria-hidden className="h-px w-6 bg-gradient-to-r from-transparent to-[var(--sm-gold)]" />
-              <span className="font-cinzel text-[0.62rem] uppercase tracking-[0.42em] text-legible" style={{ marginRight: "-0.42em" }}>
+              <span aria-hidden className="animate-cine-shade h-px w-6 bg-gradient-to-r from-transparent to-[var(--sm-gold)]" style={{ animationDelay: "2.4s" }} />
+              <span className="animate-cine-tap font-cinzel text-[0.62rem] uppercase tracking-[0.42em] text-legible" style={{ marginRight: "-0.42em" }}>
                 Tap to Enter
               </span>
-              <span aria-hidden className="h-px w-6 bg-gradient-to-l from-transparent to-[var(--sm-gold)]" />
+              <span aria-hidden className="animate-cine-shade h-px w-6 bg-gradient-to-l from-transparent to-[var(--sm-gold)]" style={{ animationDelay: "2.4s" }} />
             </span>
           </div>
         </div>
@@ -632,7 +943,7 @@ export const WorldHome = () => {
         data-testid="world-music-toggle"
         aria-label={songOn ? "Mute music" : "Play music"}
         aria-pressed={songOn}
-        className="fixed left-[14px] top-[2px] z-[60] p-[10px] text-white"
+        className={`fixed left-[14px] top-[2px] z-[60] p-[10px] text-white ${location.hash ? "" : "animate-ui-in"}`}
       >
         {songOn ? <Volume2 size={25} /> : <VolumeOff size={25} />}
       </button>
