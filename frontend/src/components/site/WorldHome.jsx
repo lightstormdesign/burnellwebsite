@@ -68,8 +68,8 @@ const EMBLEM = "/burnell-emblem.png";
 const EMBLEM_DEPTH = 7; // stacked copies behind the face, 1px apart
 const LANDING_EARLY_S = 1.3; // the B starts fading in this long before the transition ends
 const STALL_MS = 1200; // transition's clock stuck this long: kick it once, then move on
-const TILT_X = 68; // canvas px of sideways shift at full tilt, nearest layer
-const TILT_Y = 44;
+const TILT_X = 95; // canvas px of sideways shift at full tilt, nearest layer
+const TILT_Y = 62;
 
 // Creatures. Coordinates are in the space of the layer each one lives in
 // (so it rides along with that layer through the descent, the story zoom
@@ -81,9 +81,13 @@ const BUTTERFLY = "/burnell-world-butterfly.webp";
 const FAR_FLOCK = [[0, 0], [-56, -22], [-56, 24], [-112, -42], [-110, 46]];
 const NEAR_FLOCK = [[0, 0], [95, -34], [108, 40]];
 const FISH_CYCLE_S = 7.5;
-const FISH_LEAP_S = 1.35;
-const FISH_FROM = [400, 925];
-const FISH_TO = [560, 930];
+const FISH_LEAP_S = 1.5;
+const WATERLINE = 928; // the pool's surface, in the stream layer
+const FISH_X = [380, 580]; // where the leap starts and ends
+const FISH_DEPTH = 62; // starts and ends this far under the surface (hidden)
+const FISH_RISE = 700; // 4x the height of the arc
+// when it breaks the surface on the way out, and on the way back in
+const FISH_SURFACE_U = (1 - Math.sqrt(1 - (4 * FISH_DEPTH) / FISH_RISE)) / 2;
 const RIPPLE_S = 1.2;
 const CREATURES = [
   // a far flock drifting across the high sky, small and slow
@@ -112,28 +116,28 @@ const CREATURES = [
       return { x: 1150 - u * 1500 + dx, y: 190 + dy + 10 * Math.sin(t * 1.5 + i) };
     },
   })),
-  // the trout: leaps from the pool, arcs, dives back in (once you've landed)
+  // the trout: rises out of the pool, arcs, dives back in (once you've
+  // landed). It's drawn inside a window whose bottom edge is the water's
+  // surface, so it's revealed as it breaks out and swallowed as it goes
+  // back under, rather than fading.
   {
     id: "fish",
     kind: "fish",
     layer: "stream",
     w: 105,
+    clip: [230, 640, 730, WATERLINE],
     pose: (t, p) => {
       const u = (t % FISH_CYCLE_S) / FISH_LEAP_S;
       if (p < 0.75 || u > 1) return null;
       return {
-        x: FISH_FROM[0] + (FISH_TO[0] - FISH_FROM[0]) * u,
-        y: FISH_FROM[1] - 440 * u * (1 - u),
-        rot: -15 + 100 * u,
-        op: Math.min(1, u / 0.08, (1 - u) / 0.08),
+        x: FISH_X[0] + (FISH_X[1] - FISH_X[0]) * u,
+        y: WATERLINE + FISH_DEPTH - FISH_RISE * u * (1 - u),
+        rot: -20 + 110 * u,
       };
     },
   },
-  // its splashes: a ripple where it leaves the water and where it lands
-  ...[
-    [FISH_FROM, 0],
-    [FISH_TO, FISH_LEAP_S - 0.05],
-  ].map(([[x, y], start], i) => ({
+  // its splashes: a ripple where it breaks the surface, and where it goes back in
+  ...[FISH_SURFACE_U, 1 - FISH_SURFACE_U].map((u, i) => [[FISH_X[0] + (FISH_X[1] - FISH_X[0]) * u, WATERLINE], u * FISH_LEAP_S]).map(([[x, y], start], i) => ({
     id: `ripple-${i}`,
     kind: "ripple",
     layer: "stream",
@@ -141,28 +145,28 @@ const CREATURES = [
     pose: (t, p) => {
       const r = ((t % FISH_CYCLE_S) - start) / RIPPLE_S;
       if (p < 0.75 || r < 0 || r > 1) return null;
-      return { x, y: y + 4, scale: 0.25 + 0.95 * r, op: (1 - r) * 0.9 };
+      return { x, y, scale: 0.25 + 0.95 * r, op: (1 - r) * 0.9 };
     },
   })),
-  // two butterflies wandering over the meadow
+  // two butterflies wandering over the meadow: a big one up close, a small
+  // one further off
   ...[
-    [415, 330, 0],
-    [995, 380, 2.1],
-  ].map(([cx, cy, ph], i) => ({
+    [415, 330, 0, 115, 1.6],
+    [995, 380, 2.1, 46, 1],
+  ].map(([cx, cy, ph, w, roam], i) => ({
     id: `butterfly-${i}`,
     kind: "butterfly",
     layer: "meadow",
-    w: 46,
+    w,
     pose: (t) => ({
-      x: cx + 60 * Math.sin(t * 0.55 + ph) + 18 * Math.sin(t * 1.7 + ph),
-      y: cy + 32 * Math.sin(t * 0.85 + ph * 2),
+      x: cx + roam * (60 * Math.sin(t * 0.55 + ph) + 18 * Math.sin(t * 1.7 + ph)),
+      y: cy + roam * 32 * Math.sin(t * 0.85 + ph * 2),
       rot: 10 * Math.cos(t * 0.55 + ph),
     }),
   })),
 ];
 
-const Creature = ({ c, load, refFn }) => (
-  <div ref={refFn} className="creature" style={{ opacity: 0 }}>
+const CreatureBody = ({ c, load }) => (
     <div className="creature-body">
       {c.kind === "bird" && (
         <div className="bird-frames" style={{ "--flap": `${c.flap}s`, transform: c.flip ? "scaleX(-1)" : undefined }}>
@@ -179,8 +183,22 @@ const Creature = ({ c, load, refFn }) => (
         </div>
       )}
     </div>
-  </div>
 );
+
+// A creature with `clip` lives inside a window (in its layer's coordinates)
+// and is only seen within it: the fish below the water's surface is hidden.
+const Creature = ({ c, load, refFn }) =>
+  c.clip ? (
+    <div ref={refFn} className="creature overflow-hidden" style={{ opacity: 0 }}>
+      <div className="creature-inner absolute left-0 top-0" style={{ transformOrigin: "0 0" }}>
+        <CreatureBody c={c} load={load} />
+      </div>
+    </div>
+  ) : (
+    <div ref={refFn} className="creature" style={{ opacity: 0 }}>
+      <CreatureBody c={c} load={load} />
+    </div>
+  );
 
 const FEATHER = "radial-gradient(ellipse 72% 76% at 50% 50%, #000 40%, rgba(0,0,0,0.35) 72%, transparent 100%)";
 // soft dark pool behind chapter text so it reads over the painted world
@@ -808,8 +826,8 @@ export const WorldHome = () => {
         const D = anchors[1].offsetTop;
         const C = anchors[2].offsetTop - D;
         // phone tilt, eased so it glides rather than jitters
-        tx += (tilt.current.x - tx) * 0.08;
-        ty += (tilt.current.y - ty) * 0.08;
+        tx += (tilt.current.x - tx) * 0.12;
+        ty += (tilt.current.y - ty) * 0.12;
         const key = `${W}|${H}|${ys.toFixed(1)}|${target}|${tx.toFixed(3)}|${ty.toFixed(3)}`;
         if (key !== lastKey) {
           const sizeChanged = !lastKey.startsWith(`${W}|${H}|`);
@@ -824,7 +842,14 @@ export const WorldHome = () => {
           if (sizeChanged)
             CREATURES.forEach((c, i) => {
               const el = creatureRefs.current[i];
-              if (el) el.style.width = `${(c.w * k).toFixed(1)}px`;
+              if (!el) return;
+              if (c.clip) {
+                el.style.width = `${((c.clip[2] - c.clip[0]) * k).toFixed(1)}px`;
+                el.style.height = `${((c.clip[3] - c.clip[1]) * k).toFixed(1)}px`;
+                el.firstChild.style.width = `${(c.w * k).toFixed(1)}px`;
+              } else {
+                el.style.width = `${(c.w * k).toFixed(1)}px`;
+              }
             });
           const p = clamp01(ys / D);
           // story: 0 at the end of the descent, 1 at the last chapter
@@ -889,9 +914,18 @@ export const WorldHome = () => {
             if (el.style.opacity !== "0") el.style.opacity = "0";
             return;
           }
+          el.style.opacity = (pose.op ?? 1).toFixed(3);
+          if (c.clip) {
+            // the window rides with the layer; the creature moves inside it
+            const [x0, y0] = c.clip;
+            const wx = fit.ox + (at.gx + x0 * at.g) * fit.k;
+            const wy = fit.oy + (at.gy + y0 * at.g) * fit.k;
+            el.style.transform = `translate3d(${wx.toFixed(1)}px, ${wy.toFixed(1)}px, 0) scale(${at.g.toFixed(4)})`;
+            el.firstChild.style.transform = `translate3d(${((pose.x - x0) * fit.k).toFixed(1)}px, ${((pose.y - y0) * fit.k).toFixed(1)}px, 0) rotate(${(pose.rot ?? 0).toFixed(1)}deg)`;
+            return;
+          }
           const sx = fit.ox + (at.gx + pose.x * at.g) * fit.k;
           const sy = fit.oy + (at.gy + pose.y * at.g) * fit.k;
-          el.style.opacity = (pose.op ?? 1).toFixed(3);
           el.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0) scale(${(at.g * (pose.scale ?? 1)).toFixed(4)}) rotate(${(pose.rot ?? 0).toFixed(1)}deg)`;
         });
       }

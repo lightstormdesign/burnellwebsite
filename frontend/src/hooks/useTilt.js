@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef } from "react";
 // iOS only gives motion data after asking permission, and only from inside
 // a tap: call `enable()` from the Tap to Enter handler. Android needs no
 // permission, so it starts on its own.
-const RANGE_DEG = 14; // this much tilt = full effect
+const RANGE_DEG = 10; // this much tilt = full effect
 const RECENTER = 0.004; // per reading: how quickly the resting angle follows you
 
 export const useTilt = () => {
