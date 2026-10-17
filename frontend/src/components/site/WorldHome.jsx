@@ -78,6 +78,16 @@ const TILT_Y = 62;
 const BIRD = { up: "/burnell-world-bird-up.webp", down: "/burnell-world-bird-down.webp" };
 const FISH = "/burnell-world-fish.webp";
 const BUTTERFLY = "/burnell-world-butterfly.webp";
+const CLOUD = {
+  large: "/burnell-world-cloud-large.webp",
+  medium: "/burnell-world-cloud-medium.webp",
+  small: "/burnell-world-cloud-small.webp",
+};
+// Foreground clouds aren't in any layer: they're nearer than everything
+// (FREE_DEPTH, past the meadow's 1), so they sweep by fastest on scroll and
+// swing furthest with the tilt.
+const FREE_DEPTH = 1.4;
+const wrap = (v, lo, hi) => lo + ((((v - lo) % (hi - lo)) + (hi - lo)) % (hi - lo));
 const FAR_FLOCK = [[0, 0], [-56, -22], [-56, 24], [-112, -42], [-110, 46]];
 const NEAR_FLOCK = [[0, 0], [95, -34], [108, 40]];
 const FISH_CYCLE_S = 7.5;
@@ -148,6 +158,53 @@ const CREATURES = [
       return { x, y, scale: 0.25 + 0.95 * r, op: (1 - r) * 0.9 };
     },
   })),
+  // clouds in the distance, drifting slowly with the sky behind them
+  {
+    id: "cloud-far",
+    kind: "cloud",
+    src: CLOUD.small,
+    layer: "mountains",
+    w: 230,
+    pose: (t) => ({ x: wrap(320 + t * 8, -200, 1140), y: 150, op: 0.85 }),
+  },
+  {
+    id: "cloud-mid",
+    kind: "cloud",
+    src: CLOUD.medium,
+    layer: "forest-far",
+    w: 390,
+    pose: (t) => ({ x: wrap(760 - t * 12, -260, 1200), y: 250, op: 0.9 }),
+  },
+  // foreground clouds: two sweep up past you on the way down into the
+  // world, much faster than anything else ("flying down through clouds")...
+  {
+    id: "cloud-fore-1",
+    kind: "cloud",
+    src: CLOUD.large,
+    space: "free",
+    after: "meadow",
+    w: 1150,
+    pose: (t, p) => (p > 0.75 ? null : { x: 260 + 30 * Math.sin(t * 0.2), y: 1760 - 3000 * p }),
+  },
+  {
+    id: "cloud-fore-2",
+    kind: "cloud",
+    src: CLOUD.medium,
+    space: "free",
+    after: "meadow",
+    w: 900,
+    pose: (t, p) => (p < 0.15 || p > 0.98 ? null : { x: 720 + 25 * Math.sin(t * 0.25 + 1), y: 2350 - 3000 * p }),
+  },
+  // ...and one drifts slowly across the top of the sky through the story
+  {
+    id: "cloud-story",
+    kind: "cloud",
+    src: CLOUD.large,
+    space: "free",
+    after: "meadow",
+    w: 820,
+    pose: (t, p) => (p < 0.99 ? null : { x: wrap(1450 - t * 22, -500, 1450), y: 170, op: 0.8 }),
+  },
   // two butterflies wandering over the meadow: a big one up close, a small
   // one further off
   ...[
@@ -176,6 +233,7 @@ const CreatureBody = ({ c, load }) => (
       )}
       {c.kind === "fish" && <img src={load ? FISH : undefined} alt="" className="block w-full" />}
       {c.kind === "butterfly" && <img src={load ? BUTTERFLY : undefined} alt="" className="butterfly-wings block w-full" />}
+      {c.kind === "cloud" && <img src={load ? c.src : undefined} alt="" className="block w-full" />}
       {c.kind === "ripple" && (
         <div className="relative w-full" style={{ aspectRatio: "3.2 / 1" }}>
           <span className="ripple-ring" style={{ transform: "translate(-50%, -50%)" }} />
@@ -871,6 +929,8 @@ export const WorldHome = () => {
             const gx = ax + (x - ax) * g + tx * (L.depth - 0.3) * TILT_X;
             const gy = ay + (y - ay) * g + ty * Math.max(0, L.depth - 0.1) * TILT_Y;
             placed[L.key] = { gx, gy, g };
+            // the free space (nearer than any layer): only the tilt moves it
+            placed.free = { gx: tx * (FREE_DEPTH - 0.3) * TILT_X, gy: ty * (FREE_DEPTH - 0.1) * TILT_Y, g: 1 };
             el.style.transform = `translate3d(${(ox + gx * k).toFixed(1)}px, ${(oy + gy * k).toFixed(1)}px, 0) scale(${g.toFixed(4)})`;
           });
 
@@ -907,7 +967,7 @@ export const WorldHome = () => {
         const t = (now - t0) / 1000;
         CREATURES.forEach((c, i) => {
           const el = creatureRefs.current[i];
-          const at = placed[c.layer];
+          const at = placed[c.space === "free" ? "free" : c.layer];
           if (!el || !at) return;
           const pose = c.pose(t, fit.p);
           if (!pose) {
@@ -975,7 +1035,7 @@ export const WorldHome = () => {
               />
               {/* the fish swims in front of the stream but behind the boulders */}
               {CREATURES.map((c, ci) =>
-                c.layer === L.key ? <Creature key={c.id} c={c} load={loadWorld} refFn={(el) => (creatureRefs.current[ci] = el)} /> : null
+                (c.space === "free" ? c.after : c.layer) === L.key ? <Creature key={c.id} c={c} load={loadWorld} refFn={(el) => (creatureRefs.current[ci] = el)} /> : null
               )}
             </Fragment>
           ))}
