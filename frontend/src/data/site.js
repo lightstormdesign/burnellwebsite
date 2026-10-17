@@ -20,14 +20,14 @@ export const NAV_LINKS = [
 
 // Form: "Gratitude, Mountains, Awakening, Water, Deer, Inner child, Lion" /
 // "If your music were a place: Mountain Stream in the forest."
-export const SITE_TAGLINE = "Life Is So Beautiful";
+export const SITE_TAGLINE = "Sacred Hip Hop Rooted in Nature";
 export const SITE_GENRE_TAGS = "HIP HOP | PRODUCER | PRAYERFORMER";
 
 export const HERO_BIO =
   "Burnell Washburn is a hip hop artist, producer, and prayerformer from Salt Lake City, Utah. Since 2009 he has shared stages with legends, headlined festivals, and poured his whole heart into a craft he treats as sacred service — music that reminds us we are one with nature, divine and powerful, and that this existence is truly a magical gift.";
 
 export const HERO_BIO_MOBILE =
-  "Hip hop artist, producer, and prayerformer from Salt Lake City. Music that reminds us we are one with nature — and that life is truly a magical gift.";
+  "Burnell Washburn is a hip hop artist, producer, and prayerformer from Salt Lake City. His songs are prayers for healing and awakening, reminders that we are one with nature, divine and powerful, and that this life is a magical gift.";
 
 export const BIO = [
   "Burnell Washburn is a Salt Lake City hip hop artist and producer who has been releasing music and prayerforming since 2009.",
@@ -207,6 +207,8 @@ export const MOBILE_HOME_MEDIA = {
   portalLoop: "/burnell-portal-loop-mobile.mp4",
   portalLoopPoster: "/burnell-portal-loop-mobile.jpg",
   transition: "/burnell-transition-mobile.mp4",
+  // "Beautiful", started by the Tap to Enter (half volume)
+  song: "/burnell-beautiful.mp3",
 };
 
 // Burnell's illustrated world, back to front. Coordinates are px on the

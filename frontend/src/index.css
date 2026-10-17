@@ -561,3 +561,53 @@ body {
     display: contents !important;
   }
 }
+
+/* Cinzel: small all-caps labels on the mobile Home (Tap to Enter, Scroll) */
+.font-cinzel {
+  font-family: "Cinzel", serif;
+}
+
+/* Landing emblem: the B, glowing and turning slowly in 3D. The stacked
+   copies behind the face (see WorldHome) give it a cast-gold thickness. */
+@keyframes emblem-sway {
+  0%, 100% { transform: rotateY(-16deg) rotateX(5deg) translateY(0); }
+  50% { transform: rotateY(16deg) rotateX(-4deg) translateY(-8px); }
+}
+@keyframes emblem-glow {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(240, 210, 140, 0.55)) drop-shadow(0 0 22px rgba(214, 179, 101, 0.35)); }
+  50% { filter: drop-shadow(0 0 10px rgba(255, 226, 160, 0.8)) drop-shadow(0 0 38px rgba(214, 179, 101, 0.55)); }
+}
+@keyframes emblem-halo {
+  0%, 100% { opacity: 0.55; transform: scale(0.94); }
+  50% { opacity: 0.9; transform: scale(1.06); }
+}
+.animate-emblem-sway {
+  transform-style: preserve-3d;
+  animation: emblem-sway 7s ease-in-out infinite;
+}
+.animate-emblem-glow {
+  animation: emblem-glow 3.5s ease-in-out infinite;
+}
+.animate-emblem-halo {
+  animation: emblem-halo 3.5s ease-in-out infinite;
+}
+
+/* Scroll cue: a drop of gold falling down a hairline */
+@keyframes scroll-drop {
+  0% { transform: translateY(-6px); opacity: 0; }
+  25% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(40px); opacity: 0; }
+}
+.animate-scroll-drop {
+  animation: scroll-drop 2.2s cubic-bezier(0.55, 0, 0.45, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-emblem-sway,
+  .animate-emblem-glow,
+  .animate-emblem-halo,
+  .animate-scroll-drop {
+    animation: none;
+  }
+}

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import { Volume2, VolumeX } from "lucide-react";
 import {
   ABOUT_STAGES,
   ARTIST_NAME,
   HERO_BIO_MOBILE,
   HERO_TAGLINE,
   LOGO,
+  SITE_GENRE_TAGS,
   MOBILE_HOME_MEDIA as MEDIA,
   WORLD_CANVAS,
   WORLD_LAYERS,
@@ -16,12 +17,13 @@ import {
 // story told inside it.
 //
 //   portal      intro loop (3D + birds) plays once, then the hold loop runs
-//               until the tap. "Tap to Enter".
+//               until the tap. "Tap to Enter". The tap also starts
+//               "Beautiful" at half volume.
 //   transition  the whip-pan / water-drop video. Its first frame is the hold
 //               loop's first frame; its last frame is the world at landing.
 //   world       the illustrated layers, starting exactly where the video
-//               ended: blurred and dimmed under the logo and "Scroll to read
-//               my story". The first scroll lifts the blur and descends into
+//               ended: blurred and dimmed under the glowing B, the tagline,
+//               and a scroll cue. The first scroll lifts the blur and descends into
 //               the world (each layer at its own pace), then the world dims
 //               and the story chapters play one per swipe (scroll-snap).
 //
@@ -32,6 +34,10 @@ import {
 const DESCENT_SVH = 170; // scroll distance of the descent into the world
 const CHAPTER_SVH = 90; // scroll distance per story chapter
 const TRANSITION_FAILSAFE_MS = 9000;
+const SONG_VOLUME = 0.5;
+const SONG_FADE_S = 2.5;
+const EMBLEM = "/burnell-emblem.png";
+const EMBLEM_DEPTH = 7; // stacked copies behind the face, 1px apart
 
 const FEATHER = "radial-gradient(ellipse 72% 76% at 50% 50%, #000 40%, rgba(0,0,0,0.35) 72%, transparent 100%)";
 // soft dark pool behind chapter text so it reads over the painted world
@@ -91,6 +97,31 @@ const Chapter = ({ s }) => {
   );
 };
 
+// The B, glowing and turning slowly in 3D. Darkened copies stacked behind
+// the face give it thickness as it turns.
+const Emblem3D = () => (
+  <div className="relative" style={{ perspective: "700px" }}>
+    <div
+      aria-hidden
+      className="animate-emblem-halo absolute left-1/2 top-1/2 h-[170%] w-[170%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+      style={{ background: "radial-gradient(circle, rgba(214,179,101,0.32) 0%, rgba(214,179,101,0.1) 40%, transparent 68%)" }}
+    />
+    <div className="animate-emblem-sway relative w-[clamp(7.5rem,36vw,10rem)]">
+      {Array.from({ length: EMBLEM_DEPTH }, (_, i) => (
+        <img
+          key={i}
+          src={EMBLEM}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-auto w-full"
+          style={{ transform: `translateZ(${-(EMBLEM_DEPTH - i)}px)`, filter: `brightness(${0.3 + (0.25 * i) / EMBLEM_DEPTH}) sepia(0.6)` }}
+        />
+      ))}
+      <img src={EMBLEM} alt={ARTIST_NAME} className="animate-emblem-glow relative h-auto w-full" style={{ transform: "translateZ(0.5px)" }} />
+    </div>
+  </div>
+);
+
 export const WorldHome = () => {
   const [phase, setPhase] = useState("portal"); // portal | transition | world
   const [introDone, setIntroDone] = useState(false);
@@ -108,6 +139,9 @@ export const WorldHome = () => {
   const anchorRefs = useRef([]);
   const enteringRef = useRef(false);
   const failsafeRef = useRef(null);
+  const songRef = useRef(null);
+  const audioRef = useRef(null); // { ctx, gain } once the song is routed through Web Audio
+  const [songOn, setSongOn] = useState(false);
 
   const reduceMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -147,9 +181,54 @@ export const WorldHome = () => {
     setPhase("world");
   };
 
+  // "Beautiful" at half volume. iOS ignores media.volume, so the volume is
+  // a Web Audio gain node. Everything here has to happen inside the tap
+  // (that's what unlocks audio on iOS).
+  const startSong = () => {
+    const el = songRef.current;
+    if (!el) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC && !audioRef.current) {
+        const ctx = new AC();
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(SONG_VOLUME, ctx.currentTime + SONG_FADE_S);
+        ctx.createMediaElementSource(el).connect(gain).connect(ctx.destination);
+        audioRef.current = { ctx, gain };
+      }
+      audioRef.current?.ctx.resume();
+    } catch (e) {
+      audioRef.current = null;
+    }
+    if (!audioRef.current) el.volume = SONG_VOLUME;
+    el.play().then(() => setSongOn(true)).catch(() => {});
+  };
+
+  const toggleSong = () => {
+    const el = songRef.current;
+    if (!el) return;
+    if (songOn) {
+      el.pause();
+      setSongOn(false);
+    } else {
+      audioRef.current?.ctx.resume();
+      el.play().then(() => setSongOn(true)).catch(() => {});
+    }
+  };
+
+  useEffect(
+    () => () => {
+      songRef.current?.pause();
+      audioRef.current?.ctx.close().catch(() => {});
+    },
+    []
+  );
+
   const handleTap = () => {
     if (enteringRef.current) return;
     enteringRef.current = true;
+    startSong();
     const v = transitionRef.current;
     if (reduceMotion || !v) {
       enterWorld();
@@ -258,24 +337,45 @@ export const WorldHome = () => {
         <div ref={shadeRef} className="absolute inset-0 bg-black" style={{ opacity: 0.5 }} />
       </div>
 
-      {/* Landing copy, over the blurred world */}
+      {/* Landing, over the blurred world: the B, the tagline, a scroll cue */}
       <div
         ref={landingRef}
-        className="pointer-events-none fixed inset-x-0 top-0 z-20 flex flex-col items-center px-6 text-center"
+        className="pointer-events-none fixed inset-x-0 top-0 z-20 px-6 text-center"
         style={{ height: "100svh", visibility: inWorld ? "visible" : "hidden" }}
       >
+        <div className="flex h-full flex-col items-center justify-center pb-[4svh]">
+          <div
+            style={{
+              opacity: inWorld ? 1 : 0,
+              transform: inWorld ? "none" : "scale(0.86)",
+              filter: inWorld ? "none" : "blur(10px)",
+              transition: "opacity 1.6s ease 0.3s, transform 2.2s cubic-bezier(0.16,1,0.3,1) 0.3s, filter 1.6s ease 0.3s",
+            }}
+          >
+            <Emblem3D />
+          </div>
+          <div
+            className="flex flex-col items-center"
+            style={{ opacity: inWorld ? 1 : 0, transform: inWorld ? "none" : "translateY(10px)", transition: "opacity 1.4s ease 1.4s, transform 1.4s ease 1.4s" }}
+          >
+            <p className="font-display text-metallic-grad mt-10 text-[1.7rem] leading-tight" style={{ textWrap: "balance" }}>
+              {HERO_TAGLINE}
+            </p>
+            <p className="font-cinzel mt-4 text-[0.6rem] tracking-[0.34em] text-[var(--sm-gold)] text-legible">{SITE_GENRE_TAGS.split(" | ").join("  ·  ")}</p>
+            <p className="font-body mt-6 max-w-[20.5rem] text-[0.95rem] font-light leading-relaxed text-white/85 text-legible" style={{ textWrap: "balance" }}>
+              {HERO_BIO_MOBILE}
+            </p>
+          </div>
+        </div>
         <div
-          className="flex h-full flex-col items-center"
-          style={{ opacity: inWorld ? 1 : 0, transform: inWorld ? "none" : "translateY(12px)", transition: "opacity 1.4s ease 0.5s, transform 1.4s ease 0.5s" }}
+          className="absolute inset-x-0 bottom-[6svh] flex flex-col items-center"
+          style={{ opacity: inWorld ? 1 : 0, transition: "opacity 1.2s ease 2.4s" }}
         >
-          <img src={LOGO} alt={ARTIST_NAME} className="gold-glow mt-[18svh] w-[80%] max-w-[22rem]" />
-          <p className="font-display text-metallic-grad mt-7 text-[1.8rem] leading-tight">{HERO_TAGLINE}</p>
-          <p className="font-body mt-5 max-w-[21rem] text-[1rem] font-light leading-relaxed text-[var(--sm-gold-light)] text-legible" style={{ textWrap: "balance" }}>
-            {HERO_BIO_MOBILE}
-          </p>
-          <div className="mt-auto mb-[7svh] flex flex-col items-center">
-            <span className="font-accent text-xs uppercase tracking-[0.32em] text-[var(--sm-gold-light)] text-legible">Scroll to read my story</span>
-            <ChevronDown size={22} className="mt-3 text-[var(--sm-gold)]" style={{ animation: "breathe 2.4s ease-in-out infinite" }} />
+          <span className="font-cinzel text-[0.6rem] uppercase tracking-[0.45em] text-[var(--sm-gold-light)] text-legible" style={{ marginRight: "-0.45em" }}>
+            Scroll
+          </span>
+          <div className="relative mt-3 h-10 w-px overflow-hidden bg-gradient-to-b from-white/35 to-white/0">
+            <span className="animate-scroll-drop absolute left-1/2 top-0 block h-2 w-[3px] -translate-x-1/2 rounded-full bg-[var(--sm-gold-light)]" style={{ boxShadow: "0 0 6px rgba(240,210,140,0.9)" }} />
           </div>
         </div>
       </div>
@@ -359,15 +459,30 @@ export const WorldHome = () => {
         >
           <div aria-hidden className="absolute inset-x-0 top-0 h-[34%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
           <div aria-hidden className="absolute inset-x-0 bottom-0 h-[24%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)" }} />
-          <img src={LOGO} alt={ARTIST_NAME} className="gold-glow relative mt-[12svh] w-[78%] max-w-[22rem]" />
-          <span
-            className="font-accent relative mt-auto mb-[9svh] text-sm uppercase tracking-[0.32em] text-[var(--sm-gold-light)] text-legible"
-            style={{ animation: "breathe 2.4s ease-in-out infinite" }}
-          >
-            Tap to Enter
-          </span>
+          <div className="relative mt-[12svh] flex w-full flex-col items-center">
+            <img src={LOGO} alt={ARTIST_NAME} className="gold-glow w-[78%] max-w-[22rem]" />
+            <span className="mt-5 flex items-center gap-3 text-[var(--sm-gold-light)]" style={{ animation: "breathe 3.2s ease-in-out infinite" }}>
+              <span aria-hidden className="h-px w-6 bg-gradient-to-r from-transparent to-[var(--sm-gold)]" />
+              <span className="font-cinzel text-[0.62rem] uppercase tracking-[0.42em] text-legible" style={{ marginRight: "-0.42em" }}>
+                Tap to Enter
+              </span>
+              <span aria-hidden className="h-px w-6 bg-gradient-to-l from-transparent to-[var(--sm-gold)]" />
+            </span>
+          </div>
         </div>
       </button>
+
+      <audio ref={songRef} src={MEDIA.song} preload="metadata" loop playsInline />
+      {inWorld && (
+        <button
+          type="button"
+          onClick={toggleSong}
+          aria-label={songOn ? "Pause music" : "Play music"}
+          className="fixed bottom-5 right-5 z-50 flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/30 text-[var(--sm-gold-light)] backdrop-blur-sm"
+        >
+          {songOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
+        </button>
+      )}
 
       {/* Scroll track: landing, end of the descent, then one stop per chapter */}
       <div
