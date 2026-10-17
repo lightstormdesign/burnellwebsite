@@ -99,6 +99,19 @@ const FISH_RISE = 700; // 4x the height of the arc
 // when it breaks the surface on the way out, and on the way back in
 const FISH_SURFACE_U = (1 - Math.sqrt(1 - (4 * FISH_DEPTH) / FISH_RISE)) / 2;
 const RIPPLE_S = 1.2;
+// Falling aspen leaves: six, at three distances, each tumbling (turning
+// and flipping edge-on) as it drifts down. Near ones are bigger and fall
+// faster, and like everything else they rise past you as you scroll down.
+// Kept deliberately light: one small image each, moved and turned only.
+const LEAF = [1, 2, 3, 4].map((n) => `/burnell-world-leaf-${n}.webp`);
+const LEAVES = [
+  { src: LEAF[3], after: "meadow", depth: 1, w: 120, x0: 180, off: 0, ph: 0 },
+  { src: LEAF[1], after: "meadow", depth: 1, w: 105, x0: 760, off: 1100, ph: 2.1 },
+  { src: LEAF[0], after: "forest-far", depth: 0.6, w: 78, x0: 560, off: 400, ph: 4.2 },
+  { src: LEAF[2], after: "forest-far", depth: 0.6, w: 70, x0: 250, off: 1500, ph: 1.3 },
+  { src: LEAF[3], after: "mountains", depth: 0.35, w: 46, x0: 700, off: 900, ph: 3.3 },
+  { src: LEAF[2], after: "mountains", depth: 0.35, w: 42, x0: 330, off: 200, ph: 5.1 },
+];
 const PARTING_CLOUDS = [
   // far: behind the near forest, small, slow
   { src: CLOUD.small, after: "mountains", depth: 0.35, w: 300, x0: 400, y0: 470, dir: -1, op: 0.85 },
@@ -200,6 +213,25 @@ const CREATURES = [
       };
     },
   })),
+  ...LEAVES.map((c, i) => ({
+    id: `leaf-${i}`,
+    kind: "leaf",
+    src: c.src,
+    space: "free",
+    after: c.after,
+    depth: c.depth,
+    w: c.w,
+    pose: (t, p) => {
+      const speed = 45 + 95 * c.depth; // canvas px per second
+      return {
+        x: c.x0 + 70 * Math.sin(t * 0.5 + c.ph) + 25 * Math.sin(t * 1.3 + c.ph * 2),
+        y: wrap(c.off + t * speed - p * (250 + 650 * c.depth), -220, 1890),
+        rot: 30 * Math.sin(t * 0.7 + c.ph) + c.ph * 40,
+        flip: Math.cos(t * (1.1 + 0.4 * c.depth) + c.ph),
+        op: c.depth < 0.5 ? 0.85 : 1,
+      };
+    },
+  })),
   // two butterflies wandering over the meadow: a big one up close, a small
   // one further off
   ...[
@@ -229,6 +261,7 @@ const CreatureBody = ({ c, load }) => (
       {c.kind === "fish" && <img src={load ? FISH : undefined} alt="" className="block w-full" />}
       {c.kind === "butterfly" && <img src={load ? BUTTERFLY : undefined} alt="" className="butterfly-wings block w-full" />}
       {c.kind === "cloud" && <img src={load ? c.src : undefined} alt="" className="block w-full" />}
+      {c.kind === "leaf" && <img src={load ? c.src : undefined} alt="" className="block w-full" />}
       {c.kind === "ripple" && (
         <div className="relative w-full" style={{ aspectRatio: "3.2 / 1" }}>
           <span className="ripple-ring" style={{ transform: "translate(-50%, -50%)" }} />
@@ -982,7 +1015,9 @@ export const WorldHome = () => {
           }
           const sx = fit.ox + (at.gx + pose.x * at.g) * fit.k;
           const sy = fit.oy + (at.gy + pose.y * at.g) * fit.k;
-          el.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0) scale(${(at.g * (pose.scale ?? 1)).toFixed(4)}) rotate(${(pose.rot ?? 0).toFixed(1)}deg)`;
+          // `flip` squashes it along its own width (after the turn), so a
+          // leaf tumbles edge-on and over
+          el.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0) scale(${(at.g * (pose.scale ?? 1)).toFixed(4)}) rotate(${(pose.rot ?? 0).toFixed(1)}deg)${pose.flip != null ? ` scaleX(${pose.flip.toFixed(3)})` : ""}`;
         });
       }
 
