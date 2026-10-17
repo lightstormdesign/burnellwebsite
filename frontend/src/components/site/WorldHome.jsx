@@ -175,8 +175,9 @@ const CREATURES = [
     w: 390,
     pose: (t) => ({ x: wrap(760 - t * 12, -260, 1200), y: 250, op: 0.9 }),
   },
-  // foreground clouds: two sweep up past you on the way down into the
-  // world, much faster than anything else ("flying down through clouds")...
+  // foreground clouds: on the way down into the world, two sweep in from
+  // the sides (rising a little) and back out, much faster than anything
+  // else, framing the world rather than covering it...
   {
     id: "cloud-fore-1",
     kind: "cloud",
@@ -184,7 +185,12 @@ const CREATURES = [
     space: "free",
     after: "meadow",
     w: 1150,
-    pose: (t, p) => (p > 0.75 ? null : { x: 260 + 30 * Math.sin(t * 0.2), y: 1760 - 3000 * p }),
+    pose: (t, p) => {
+      const u = (p - 0.04) / 0.62;
+      if (u <= 0 || u >= 1) return null;
+      // in from the left until its right edge covers ~a third, then out
+      return { x: -720 + 440 * Math.sin(Math.PI * u) + 15 * Math.sin(t * 0.3), y: 1250 - 950 * p };
+    },
   },
   {
     id: "cloud-fore-2",
@@ -193,7 +199,12 @@ const CREATURES = [
     space: "free",
     after: "meadow",
     w: 900,
-    pose: (t, p) => (p < 0.15 || p > 0.98 ? null : { x: 720 + 25 * Math.sin(t * 0.25 + 1), y: 2350 - 3000 * p }),
+    pose: (t, p) => {
+      const u = (p - 0.22) / 0.68;
+      if (u <= 0 || u >= 1) return null;
+      // in from the right, the same way
+      return { x: 1420 - 350 * Math.sin(Math.PI * u) + 15 * Math.sin(t * 0.3 + 1), y: 1500 - 950 * p };
+    },
   },
   // ...and one drifts slowly across the top of the sky through the story
   {
