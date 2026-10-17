@@ -62,7 +62,7 @@ const WARM_FALLBACK_MS = 3500; // if it never does (Low Power Mode)
 // Half volume and the 2.5s fade-in are baked into the song file itself, and
 // its beat is a precomputed map (one byte per 1/30s), so no Web Audio runs:
 // on iPhone, Web Audio starting up froze the transition video mid-play.
-const BEAT_MAP = "/burnell-beautiful-beat.bin";
+const BEAT_MAP = "/burnell-beautiful-beat.bin?v=8";
 const BEAT_FPS = 30;
 const EMBLEM = "/burnell-emblem.png";
 const EMBLEM_DEPTH = 7; // stacked copies behind the face, 1px apart
@@ -1055,6 +1055,16 @@ export const WorldHome = () => {
         onEnded={enterWorld}
         tabIndex={-1}
       />
+      {/* An all-but-invisible layer over the transition while it plays. With
+          nothing on top of it, iPhone can hand a full-screen video to a
+          direct display path that sometimes stops updating the picture
+          (the clock runs on, the frame stays); anything layered over it
+          keeps it on the normal path. Found because the ?debug log box,
+          which sits over the video, made the freeze much rarer. */}
+      {(phase === "transition" || (phase === "world" && transitionPlaying && !layersReady)) && (
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-[32]" style={{ background: "rgba(0,0,0,0.012)" }} />
+      )}
+
       {/* Portal: intro, then hold loop, until the tap (and until the
           transition's first frame is actually on screen) */}
       <button

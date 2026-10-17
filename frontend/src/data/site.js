@@ -224,14 +224,19 @@ export const HOME_MEDIA = {
 // the hold loop's first frame is the transition video's first frame, and the
 // transition's last frame is WORLD_LAYERS at their `start` positions, so
 // every handoff is seamless.
+// Bumped whenever the videos or the song are re-encoded: these keep their
+// file names and phones cache them, so without it a phone can keep playing
+// an old encode.
+const MEDIA_V = "?v=8";
+
 export const MOBILE_HOME_MEDIA = {
-  portalIntro: "/burnell-portal-intro-mobile.mp4",
+  portalIntro: `/burnell-portal-intro-mobile.mp4${MEDIA_V}`,
   portalIntroPoster: "/burnell-portal-intro-mobile.webp",
-  portalLoop: "/burnell-portal-loop-mobile.mp4",
+  portalLoop: `/burnell-portal-loop-mobile.mp4${MEDIA_V}`,
   portalLoopPoster: "/burnell-portal-loop-mobile.webp",
-  transition: "/burnell-transition-mobile.mp4",
+  transition: `/burnell-transition-mobile.mp4${MEDIA_V}`,
   // "Beautiful", started by the Tap to Enter (half volume)
-  song: "/burnell-beautiful.m4a",
+  song: `/burnell-beautiful.m4a${MEDIA_V}`,
 };
 
 // Burnell's illustrated world, back to front. Coordinates are px on the
