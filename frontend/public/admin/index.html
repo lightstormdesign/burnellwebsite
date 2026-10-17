@@ -186,8 +186,12 @@
                   file: "frontend/src/content/links.json",
                   fields: [
                     linkList("socials", "Social links"),
-                    f("textList", "Text list (Laylo)", "object", {
-                      fields: [f("url", "Laylo link"), f("leadMagnet", "What fans get for joining", "text")],
+                    f("textList", "Text list", "object", {
+                      fields: [
+                        f("url", "Sign-up link", "string", { hint: "/connect is the site's own sign-up page." }),
+                        f("leadMagnet", "What fans get for joining", "text"),
+                        f("rewardUrl", "Reward link", "string", { hint: "Shown right after someone joins, e.g. a private link to the unreleased song." }),
+                      ],
                     }),
                     f("communityOffers", "Community offers", "list", {
                       summary: "{{fields.label}}",

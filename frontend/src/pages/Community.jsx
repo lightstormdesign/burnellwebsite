@@ -3,7 +3,7 @@ import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
 import { Reveal } from "@/components/site/Reveal";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { SOCIALS, LAYLO_URL, ARTIST_NAME, COMMUNITY_OFFERS } from "@/data/site";
+import { SOCIALS, LAYLO_URL, TEXT_LIST_LINK_PROPS, ARTIST_NAME, COMMUNITY_OFFERS } from "@/data/site";
 
 // Repurposed as the dedicated text-list signup landing page — this is where
 // "join her world" lives (the About page's "Join the Family" button routes
@@ -61,7 +61,7 @@ export default function Community() {
         {/* Stretched horizontally instead of vertically (wide, short) so it
             reveals more of the blonde woman's head in the background crowd
             photo behind it. Copy condensed to 2 lines max at this width;
-            routes to Sierra's real Laylo text-list landing page rather than
+            routes to the site's own /connect text-list page rather than
             a native form.
 
             Rendered directly (no Reveal-driven transform/opacity animation)
@@ -85,8 +85,7 @@ export default function Community() {
           </p>
           <a
             href={LAYLO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...TEXT_LIST_LINK_PROPS}
             data-testid="community-signup-laylo-link"
             className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[var(--sm-gold)] px-6 py-2.5 font-body text-sm font-medium text-black transition-colors hover:bg-[var(--sm-gold-light)]"
           >

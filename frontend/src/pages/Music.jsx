@@ -13,6 +13,7 @@ import {
   FEATURED_VIDEO,
   LEADMAGNET_DESCRIPTION,
   LAYLO_URL,
+  TEXT_LIST_LINK_PROPS,
   ARTIST_NAME,
 } from "@/data/site";
 
@@ -167,8 +168,7 @@ export default function Music() {
                 <p className="font-body mt-2 max-w-sm text-sm font-light text-white/65">{LEADMAGNET_DESCRIPTION}</p>
                 <a
                   href={LAYLO_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  {...TEXT_LIST_LINK_PROPS}
                   data-testid="music-leadmagnet-laylo-link"
                   className="mt-6 inline-flex items-center gap-2 rounded-full bg-[var(--sm-gold)] px-6 py-2.5 font-body text-sm font-medium text-black transition-colors hover:bg-[var(--sm-gold-light)]"
                 >

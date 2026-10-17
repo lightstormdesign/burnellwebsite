@@ -14,6 +14,7 @@ const PAGES = {
   tour: () => import("@/pages/Tour"),
   community: () => import("@/pages/Community"),
   onlyHueman: () => import("@/pages/OnlyHueman"),
+  connect: () => import("@/pages/Connect"),
 };
 const About = lazy(PAGES.about);
 const EPK = lazy(PAGES.epk);
@@ -22,6 +23,7 @@ const Music = lazy(PAGES.music);
 const Tour = lazy(PAGES.tour);
 const Community = lazy(PAGES.community);
 const OnlyHueman = lazy(PAGES.onlyHueman);
+const Connect = lazy(PAGES.connect);
 const PREFETCH_DELAY_MS = 8000;
 import { TrackingPixel } from "@/components/site/TrackingPixel";
 import { GlowCursor } from "@/components/site/GlowCursor";
@@ -70,6 +72,7 @@ function App() {
             <Route path="/tour" element={<Tour />} />
             <Route path="/community" element={<Community />} />
             <Route path="/only-hueman" element={<OnlyHueman />} />
+            <Route path="/connect" element={<Connect />} />
           </Routes>
         </Suspense>
       </BrowserRouter>
