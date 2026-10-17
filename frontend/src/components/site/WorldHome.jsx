@@ -64,7 +64,7 @@ const SONG_FADE_S = 2.5;
 const EMBLEM = "/burnell-emblem.png";
 const EMBLEM_DEPTH = 7; // stacked copies behind the face, 1px apart
 const LANDING_EARLY_S = 1.3; // the B starts fading in this long before the transition ends
-const STALL_MS = 2000; // transition stuck this long: nudge it, then move on
+const STALL_MS = 700; // transition frozen this long: kick it (a few times), then move on
 const TILT_X = 40; // canvas px of sideways shift at full tilt, nearest layer
 const TILT_Y = 26;
 
@@ -344,6 +344,46 @@ export const WorldHome = () => {
   const stallRef = useRef(null);
   const [landingEarly, setLandingEarly] = useState(false);
   const { tilt, enable: enableTilt } = useTilt();
+
+  // ?debug: a small on-screen log of what the transition and the song do,
+  // for diagnosing playback on a real phone
+  const debug = typeof window !== "undefined" && window.location.search.includes("debug");
+  const debugRef = useRef(null);
+  const debugLines = useRef([]);
+  const t0Ref = useRef(typeof performance !== "undefined" ? performance.now() : 0);
+  const dlog = (msg) => {
+    if (!debug) return;
+    debugLines.current = [...debugLines.current.slice(-14), `${((performance.now() - t0Ref.current) / 1000).toFixed(2)} ${msg}`];
+    if (debugRef.current) debugRef.current.textContent = debugLines.current.join("\n");
+  };
+
+  // Tilt: iOS shows a permission prompt, and a system prompt over the
+  // transition can freeze it, so ask on their first touch in the world.
+  useEffect(() => {
+    if (phase !== "world") return;
+    const ask = () => enableTilt();
+    window.addEventListener("touchend", ask, { once: true });
+    window.addEventListener("click", ask, { once: true });
+    return () => {
+      window.removeEventListener("touchend", ask);
+      window.removeEventListener("click", ask);
+    };
+  }, [phase, enableTilt]);
+
+  useEffect(() => {
+    if (!debug) return;
+    const v = transitionRef.current;
+    const a = songRef.current;
+    const evs = ["play", "playing", "pause", "waiting", "stalled", "suspend", "seeking", "seeked", "ended", "error", "emptied"];
+    const onV = (e) => dlog(`video ${e.type} t=${v.currentTime.toFixed(2)} rs=${v.readyState}${v.src.startsWith("blob:") ? " blob" : ""}`);
+    const onA = (e) => dlog(`song ${e.type}`);
+    evs.forEach((ev) => v.addEventListener(ev, onV));
+    ["playing", "pause", "waiting", "stalled"].forEach((ev) => a.addEventListener(ev, onA));
+    return () => {
+      evs.forEach((ev) => v.removeEventListener(ev, onV));
+      ["playing", "pause", "waiting", "stalled"].forEach((ev) => a.removeEventListener(ev, onA));
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -471,32 +511,55 @@ export const WorldHome = () => {
       v.play().catch(enterWorld);
     });
 
-  // If the transition stops moving mid-play, nudge it once; if it's still
-  // stuck, go on to the world rather than sit on a frozen frame.
+  // Keeps the transition moving. iOS can pause a playing video, or keep its
+  // clock running while the picture stops updating, when audio starts or a
+  // system prompt appears. Every 250ms: if it was paused, resume it; if no
+  // new frame has reached the screen for a moment, re-seek in place to kick
+  // the decoder. If it's still frozen after a few tries, move on to the
+  // world rather than sit on a frozen frame.
   const watchStall = (v) => {
     let lastT = -1;
-    let stuckFor = 0;
-    let nudged = false;
+    let lastMoveAt = performance.now();
+    let lastFrameAt = 0; // from requestVideoFrameCallback, once it's proven to fire
+    let frames = 0;
+    let kicks = 0;
+    const onFrame = () => {
+      frames++;
+      if (frames >= 5) lastFrameAt = performance.now();
+      if (!v.ended) v.requestVideoFrameCallback(onFrame);
+    };
+    if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(onFrame);
     clearInterval(stallRef.current);
     stallRef.current = setInterval(() => {
       if (v.ended) return clearInterval(stallRef.current);
+      const now = performance.now();
+      if (v.paused) {
+        dlog("paused mid-transition: resuming");
+        v.play().catch(() => {});
+      }
       if (v.currentTime !== lastT) {
         lastT = v.currentTime;
-        stuckFor = 0;
-        return;
+        lastMoveAt = now;
       }
-      stuckFor += 250;
-      if (stuckFor < STALL_MS) return;
-      if (!nudged) {
-        nudged = true;
-        stuckFor = 0;
+      // frozen = the clock stopped, or (where frame reports work) the
+      // picture stopped while the clock kept going
+      const frozenFor = Math.max(now - lastMoveAt, lastFrameAt ? now - lastFrameAt : 0);
+      if (frozenFor < STALL_MS) return;
+      if (kicks < 3) {
+        kicks++;
+        dlog(`frozen ${Math.round(frozenFor)}ms at ${v.currentTime.toFixed(2)}s: kick ${kicks}`);
+        lastMoveAt = now;
+        if (lastFrameAt) lastFrameAt = now;
+        try {
+          v.currentTime = v.currentTime + 0.001;
+        } catch (e) {}
         v.play().catch(() => {});
       } else {
+        dlog("still frozen: on to the world");
         enterWorld();
       }
     }, 250);
   };
-
   // "Beautiful" at half volume. iOS ignores media.volume, so the volume is
   // a Web Audio gain node. Everything here has to happen inside the tap
   // (that's what unlocks audio on iOS).
@@ -580,9 +643,9 @@ export const WorldHome = () => {
     if (enteringRef.current) return;
     enteringRef.current = true;
     primingRef.current = false;
+    dlog(`tap: video rs=${transitionRef.current?.readyState} ${transitionRef.current?.src.startsWith("blob:") ? "blob" : "network"}, song rs=${songRef.current?.readyState}`);
     setWarm(true);
     if (!mutedRef.current && !songOn) startSong();
-    enableTilt(); // iOS asks permission for motion here, inside the tap
     const v = transitionRef.current;
     if (reduceMotion || !v) {
       enterWorld();
@@ -934,7 +997,15 @@ export const WorldHome = () => {
         </div>
       </button>
 
-      <audio ref={songRef} src={MEDIA.song} preload="metadata" loop playsInline />
+      {/* fully buffered once the portal is up, so on the tap it starts at once
+          rather than a second later in the middle of the transition */}
+      <audio ref={songRef} src={MEDIA.song} preload={warm ? "auto" : "metadata"} loop playsInline />
+      {debug && (
+        <pre
+          ref={debugRef}
+          className="pointer-events-none fixed inset-x-2 bottom-2 z-[9999] max-h-[45svh] overflow-hidden whitespace-pre-wrap rounded bg-black/75 p-2 font-mono text-[10px] leading-tight text-green-300"
+        />
+      )}
       {/* Music: mirrors the menu icon (same size, same inset from the
           other corner). Slashed until the music is on. */}
       <button
