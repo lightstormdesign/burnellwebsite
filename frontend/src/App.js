@@ -24,6 +24,8 @@ const Tour = lazy(PAGES.tour);
 const Community = lazy(PAGES.community);
 const OnlyHueman = lazy(PAGES.onlyHueman);
 const Connect = lazy(PAGES.connect);
+// The site editor (/admin): its own screen, none of the site's effects.
+const AdminApp = lazy(() => import("@/admin/AdminApp"));
 const PREFETCH_DELAY_MS = 8000;
 import { TrackingPixel } from "@/components/site/TrackingPixel";
 import { GlowCursor } from "@/components/site/GlowCursor";
@@ -47,34 +49,55 @@ function ScrollToTop() {
   return null;
 }
 
-function App() {
+function Site() {
+  const { pathname } = useLocation();
+  const isAdmin = pathname === "/admin" || pathname.startsWith("/admin/");
   useEffect(() => {
+    if (isAdmin) return;
     const t = setTimeout(() => Object.values(PAGES).forEach((load) => load().catch(() => {})), PREFETCH_DELAY_MS);
     return () => clearTimeout(t);
-  }, []);
+  }, [isAdmin]);
 
+  if (isAdmin) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#08090a]" />}>
+        <Routes>
+          <Route path="/admin/*" element={<AdminApp />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  return (
+    <>
+      <TrackingPixel />
+      <SacredGeometryField />
+      <WorldDim />
+      <GlowCursor />
+      <TouchRipples />
+      <Suspense fallback={<div className="min-h-screen bg-black" />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<AboutRoute />} />
+          <Route path="/epk" element={<EPK />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/music" element={<Music />} />
+          <Route path="/tour" element={<Tour />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/only-hueman" element={<OnlyHueman />} />
+          <Route path="/connect" element={<Connect />} />
+        </Routes>
+      </Suspense>
+    </>
+  );
+}
+
+function App() {
   return (
     <div className="App">
       <BrowserRouter>
         <ScrollToTop />
-        <TrackingPixel />
-        <SacredGeometryField />
-        <WorldDim />
-        <GlowCursor />
-        <TouchRipples />
-        <Suspense fallback={<div className="min-h-screen bg-black" />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<AboutRoute />} />
-            <Route path="/epk" element={<EPK />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/music" element={<Music />} />
-            <Route path="/tour" element={<Tour />} />
-            <Route path="/community" element={<Community />} />
-            <Route path="/only-hueman" element={<OnlyHueman />} />
-            <Route path="/connect" element={<Connect />} />
-          </Routes>
-        </Suspense>
+        <Site />
       </BrowserRouter>
     </div>
   );

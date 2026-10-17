@@ -1,5 +1,5 @@
-// GitHub sign-in for the content editor (/admin, Decap CMS), step 1 of 2:
-// send the editor's popup to GitHub to approve access. Needs a GitHub OAuth
+// GitHub sign-in for the site editor (/admin), step 1 of 2: send the
+// browser to GitHub to approve access. Needs a GitHub OAuth
 // App whose callback URL is https://<this site>/api/callback, with its
 // client ID and secret set in Vercel as GITHUB_CLIENT_ID and
 // GITHUB_CLIENT_SECRET.

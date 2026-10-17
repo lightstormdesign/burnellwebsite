@@ -1,8 +1,8 @@
 // BurnellWashburn — site content.
 //
 // The words, links, dates and story live in src/content/*.json, which
-// Burnell edits himself at /admin (Decap CMS, saving straight into this
-// repo; Vercel redeploys on every save). This file reads them and exports
+// Burnell edits himself at /admin (the site editor in src/admin, saving
+// straight into this repo; Vercel redeploys on every publish). This file reads them and exports
 // the same names the components have always used, alongside the things that
 // are code, not content (navigation, media, the world's layers).
 import home from "@/content/home.json";
