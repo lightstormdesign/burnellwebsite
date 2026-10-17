@@ -597,3 +597,9 @@ body {
     animation: none;
   }
 }
+
+/* WorldHome: the landing once it has faded out on scroll */
+.is-gone,
+.is-gone * {
+  pointer-events: none !important;
+}

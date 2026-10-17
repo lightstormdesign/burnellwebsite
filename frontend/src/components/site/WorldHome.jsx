@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { AnnouncementBubble } from "@/components/site/AnnouncementBubble";
 import { Volume2, VolumeOff } from "lucide-react";
 import {
   ABOUT_STAGES,
@@ -420,6 +421,8 @@ export const WorldHome = () => {
             const o = 1 - clamp01(target / (H * 0.12));
             landingRef.current.style.opacity = o.toFixed(3);
             landingRef.current.style.filter = `blur(${((1 - o) * 8).toFixed(1)}px)`;
+            // faded out: nothing in it (the release bubble) should catch taps
+            landingRef.current.classList.toggle("is-gone", o < 0.05);
           }
           chapterRefs.current.forEach((el, i) => {
             if (!el) return;
@@ -501,6 +504,8 @@ export const WorldHome = () => {
             <span className="animate-scroll-drop absolute left-1/2 top-0 block h-2 w-[3px] -translate-x-1/2 rounded-full bg-[var(--sm-gold-light)]" style={{ boxShadow: "0 0 6px rgba(240,210,140,0.9)" }} />
           </div>
         </div>
+        {/* New release, bottom-left; fades with the rest of the landing */}
+        <AnnouncementBubble active={inWorld} compact />
       </div>
 
       {/* Story chapters, faded in and out by scroll position */}

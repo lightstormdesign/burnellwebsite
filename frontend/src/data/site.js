@@ -34,14 +34,37 @@ export const BIO = [
   "From open mics to amphitheaters, he has performed over 1,000 shows, shared stages with icons from Snoop Dogg to Wu-Tang Clan, and brings a message of gratitude, awakening, and connection to nature everywhere he goes.",
 ];
 
-// Swappable announcement bubble on the Hero (bottom-right). Points at the
-// featured single for now — swap to the new album when it's ready.
+// The new single: the CD-opening page (/only-hueman) and the announcement
+// bubble both read from here. PENDING: song-specific streaming links (the
+// buttons point at his artist profiles until then) and a short audio clip
+// to play as the case opens.
+export const NEW_RELEASE = {
+  title: "Only Hueman",
+  kind: "New Single",
+  subtitle: "The new song from Burnell Washburn.",
+  path: "/only-hueman",
+  cover: "/burnell-cd-front-cover.webp",
+  disc: "/burnell-cd-disc-face.webp",
+  insideSpread: "/burnell-cd-inside-spread.webp",
+  audioClip: null,
+  links: [
+    { label: "Spotify", href: "https://open.spotify.com/artist/0mfsTVqnzTGoZorpqo8khM" },
+    { label: "Apple Music", href: "https://music.apple.com/us/artist/burnell-washburn/432611468" },
+    { label: "YouTube", href: "https://www.youtube.com/burnellwashburn" },
+  ],
+};
+
+// Swappable announcement bubble (bottom-left): desktop Hero and the mobile
+// Home landing. Points at the new single.
 export const HERO_ANNOUNCEMENT = {
-  image: "/burnell-about-portrait.webp",
-  message: "Watch the video for “Beautiful.”",
-  linkLabel: "Watch now",
-  to: "/music",
+  image: NEW_RELEASE.cover,
+  message: "Hey fam, my new song “Only Hueman” is here.",
+  linkLabel: "Open it",
+  kicker: "New song",
+  title: NEW_RELEASE.title,
+  to: NEW_RELEASE.path,
   appearDelayMs: 6500,
+  appearDelayMobileMs: 3500,
 };
 
 export const HERO_CTA = { label: "My Story", to: "/about" };

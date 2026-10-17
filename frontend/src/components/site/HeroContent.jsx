@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { HERO_CTA, HERO_TAGLINE, HERO_BIO, HERO_BIO_MOBILE, HERO_ANNOUNCEMENT, ARTIST_NAME, LOGO } from "@/data/site";
+import { HERO_CTA, HERO_TAGLINE, HERO_BIO, HERO_BIO_MOBILE, ARTIST_NAME, LOGO } from "@/data/site";
+import { AnnouncementBubble } from "@/components/site/AnnouncementBubble";
 
 const EASE = [0.22, 1, 0.36, 1];
 const fade = (delay) => ({
@@ -23,54 +24,6 @@ const fadeMobile = (delay) => ({
 const wipeVMobile = {
   hidden: { opacity: 0, clipPath: "inset(0 100% 0 0)" },
   show: { opacity: 1, clipPath: "inset(0 0% 0 0)", transition: { duration: 2, delay: 0.25, ease: EASE } },
-};
-
-// Swappable "current announcement" bubble — appears a few seconds after Hero
-// content fades in (not immediately), bottom-right. Content driven entirely
-// by HERO_ANNOUNCEMENT in data/site.js so it's a one-line edit to update for
-// future releases, not a code change.
-const AnnouncementBubble = ({ active }) => {
-  const [show, setShow] = useState(false);
-  useEffect(() => {
-    // Bubble is `position: fixed`, so it doesn't inherit the Hero layer's
-    // scroll-driven opacity — hide it explicitly when scrolling back toward
-    // Portal, or it would stay visible on top of the wrong screen state.
-    if (!active) {
-      setShow(false);
-      return;
-    }
-    const t = setTimeout(() => setShow(true), HERO_ANNOUNCEMENT.appearDelayMs);
-    return () => clearTimeout(t);
-  }, [active]);
-
-  return (
-    <div
-      data-testid="hero-announcement"
-      className="pointer-events-none fixed bottom-6 right-6 z-40"
-      style={{
-        opacity: show ? 1 : 0,
-        transform: show ? "translateY(0)" : "translateY(16px)",
-        transition: "opacity 0.8s ease, transform 0.8s ease",
-      }}
-    >
-      <Link
-        to={HERO_ANNOUNCEMENT.to}
-        className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-white/15 bg-black/55 px-4 py-3 backdrop-blur-md transition-colors hover:border-[var(--sm-gold)]/50"
-      >
-        <img
-          src={HERO_ANNOUNCEMENT.image}
-          alt={ARTIST_NAME}
-          className="h-11 w-11 rounded-full object-cover object-top"
-        />
-        <span className="max-w-[13rem] text-left">
-          <span className="font-body block text-xs leading-snug text-white/85">{HERO_ANNOUNCEMENT.message}</span>
-          <span className="font-accent mt-0.5 block text-[0.6rem] uppercase tracking-[0.15em] text-[var(--sm-gold-light)]">
-            {HERO_ANNOUNCEMENT.linkLabel}
-          </span>
-        </span>
-      </Link>
-    </div>
-  );
 };
 
 export const HeroContent = ({ active, mobile = false }) => {
