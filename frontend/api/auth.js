@@ -9,6 +9,7 @@ module.exports = (req, res) => {
   const clientId = process.env.GITHUB_CLIENT_ID;
   if (!clientId) {
     res.statusCode = 500;
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.end("The content editor isn't connected yet: GITHUB_CLIENT_ID is not set in Vercel.");
     return;
   }
