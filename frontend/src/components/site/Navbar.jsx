@@ -41,7 +41,7 @@ export const Navbar = () => {
     // nav links as it scrolls past — a site-wide fix, not a per-page one.
     // Exception: mobile Portal/Hero, which intentionally has no bar at all
     // (see isPortalHero below) — its own persistent gradient overlay
-    // (MobilePortal.jsx) provides the "fades into black" look instead.
+    // (WorldHome.jsx) sits full-screen behind it instead.
     <header
       data-testid="site-navbar"
       className={

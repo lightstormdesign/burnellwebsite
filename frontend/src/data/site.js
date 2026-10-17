@@ -184,29 +184,49 @@ export const MUSIC_VIDEOS = [
 ];
 
 // Home/portal media. Video slots are null for this draft (no custom
-// footage yet) — CinematicExperience/MobilePortal fall back to crossfading
+// footage yet) — CinematicExperience falls back to crossfading
 // stills with a slow Ken Burns drift. Audio is null until a trimmed clip of
 // "Beautiful" is prepared.
 export const HOME_MEDIA = {
   portalImage: "/burnell-portal.jpg",
-  portalImageMobile: "/burnell-portal-mobile.jpg",
   portalLoop: null,
   transition: null,
   heroImage: "/burnell-hero.jpg",
-  heroImageMobile: "/burnell-hero-mobile.jpg",
   heroLoop: null,
   audio: null,
 };
 
-// Living illustrated frame around the Hero (HeroFrame.jsx). Each piece is a
-// transparent painting plus an "-fx" mask (red = water, green = gold) that
-// tells the shader where to flow and where to catch light. Width/height are
-// the art's pixel size, used for layout before the image loads.
-export const HERO_FRAME = {
-  bottom: { src: "/burnell-frame-bottom.webp", fx: "/burnell-frame-bottom-fx.png", width: 2172, height: 458 },
-  bottomMobile: { src: "/burnell-frame-bottom-mobile.webp", fx: "/burnell-frame-bottom-mobile-fx.png", width: 1536, height: 514 },
-  side: { src: "/burnell-frame-side.webp", fx: "/burnell-frame-side-fx.png", width: 394, height: 1530 },
+// Mobile Home (WorldHome.jsx): portal -> transition -> Burnell's world.
+// The intro plays once (3D + birds), then the hold loop runs until the tap;
+// the hold loop's first frame is the transition video's first frame, and the
+// transition's last frame is WORLD_LAYERS at their `start` positions, so
+// every handoff is seamless.
+export const MOBILE_HOME_MEDIA = {
+  portalIntro: "/burnell-portal-intro-mobile.mp4",
+  portalIntroPoster: "/burnell-portal-intro-mobile.jpg",
+  portalLoop: "/burnell-portal-loop-mobile.mp4",
+  portalLoopPoster: "/burnell-portal-loop-mobile.jpg",
+  transition: "/burnell-transition-mobile.mp4",
 };
+
+// Burnell's illustrated world, back to front. Coordinates are px on the
+// 941x1672 canvas the layers were painted on: `start` is the landing (the
+// sky, matching the transition's last frame), `end` is the landed world.
+// `span` is the slice of the descent each layer moves in, so nearer layers
+// sweep in later and faster.
+export const WORLD_CANVAS = { width: 941, height: 1672 };
+export const WORLD_LAYERS = [
+  { key: "sky", src: "/burnell-world-sky.webp", w: 941, start: [0, 0], end: [0, 0], span: [0, 1] },
+  { key: "mountains", src: "/burnell-world-mountains.webp", w: 941, start: [0, 500], end: [0, -20], span: [0, 1] },
+  { key: "forest-far", src: "/burnell-world-forest-far.webp", w: 941, start: [0, 940], end: [0, 40], span: [0, 1] },
+  { key: "forest-near", src: "/burnell-world-forest-near.webp", w: 941, start: [0, 1240], end: [0, 90], span: [0.05, 1] },
+  { key: "stream", src: "/burnell-world-stream.webp", w: 941, start: [0, 1660], end: [0, 260], span: [0.1, 1] },
+  { key: "deer", src: "/burnell-world-deer.webp", w: 150, start: [400, 2073], end: [400, 673], span: [0.1, 1], breathe: true },
+  { key: "boulders", src: "/burnell-world-boulders.webp", w: 941, start: [0, 1850], end: [0, 150], span: [0.18, 1] },
+  { key: "trees-left", src: "/burnell-world-trees-left.webp", w: 470, start: [-300, 0], end: [-110, 0], span: [0, 1] },
+  { key: "trees-right", src: "/burnell-world-trees-right.webp", w: 471, start: [770, 0], end: [580, 0], span: [0, 1] },
+  { key: "meadow", src: "/burnell-world-meadow.webp", w: 1411, start: [-235, 1820], end: [-235, 920], span: [0.25, 1] },
+];
 
 export const LOGO = "/burnell-logo.png";
 
@@ -214,3 +234,77 @@ export const TRACKING_PIXEL_IDS = {
   metaPixelId: null,
   googleAnalyticsId: null,
 };
+
+// The story, chapter by chapter. Drives the About page and the story that
+// follows the world on the mobile Home page (WorldHome.jsx).
+export const ABOUT_STAGES = [
+  {
+    id: "the-beginning",
+    kicker: "My Story",
+    title: "Where It Began",
+    opening: true,
+    media: "/burnell-about-01.jpg",
+    body: [
+      "I started making music in my bedroom after a deep heartbreak when I was 15. Freestyle rapping and slam poetry were how I made sense of the pain.",
+      "I didn’t know it yet, but that heartbreak was a doorway.",
+    ],
+    showChevron: true,
+  },
+  {
+    id: "bridge-1",
+    bridge: true,
+    body: "Then the words found a beat.",
+    showChevron: true,
+  },
+  {
+    id: "the-craft",
+    title: "The Craft",
+    media: "/burnell-about-02.jpg",
+    body: [
+      "I taught myself how to produce beats and record, and started performing at open mic nights. What began as a way to process my emotions quickly became a devotion — full-length albums, collaborations with local artists, and a whole lot of nights on small stages.",
+    ],
+    showChevron: true,
+  },
+  {
+    id: "the-rise",
+    title: "The Rise",
+    media: "/burnell-about-03.jpg",
+    body: [
+      "Within a few short years I was hosting my own events, opening for huge names, and getting invited on tour with underground hip hop legends. I’ve shared stages with heroes like Snoop Dogg, Mac Miller, Wu-Tang Clan, Nas, and Atmosphere — and I’ve been releasing music and prayerforming regularly since 2009.",
+    ],
+    showChevron: true,
+  },
+  {
+    id: "the-service",
+    title: "Sacred Service",
+    media: "/burnell-about-04.jpg",
+    body: [
+      "I make music because it hurts not to. It’s my favorite way to transmute and alchemize what I feel, and it feels like a sacred service to humanity. I sing for the children, the plants, the animals, and all of humanity.",
+    ],
+    showChevron: true,
+  },
+  {
+    id: "today",
+    title: "Today",
+    media: "/burnell-about-05.jpg",
+    body: [
+      "Through the grace of God, I get to do what I love — travel the world, work with my heroes, and make amazing friends everywhere I go. I got here with the support of my fans, friends, community, mentors, and the Most High.",
+    ],
+    showChevron: true,
+  },
+  {
+    id: "portrait",
+    media: "/burnell-about-portrait.jpg",
+    body: ["We are one with nature. We are divine, powerful beings. And this existence is truly a magical gift."],
+    showChevron: true,
+  },
+  {
+    id: "performance",
+    video: true,
+    showChevron: true,
+  },
+  {
+    id: "invitation",
+    cta: true,
+  },
+];

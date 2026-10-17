@@ -4,7 +4,7 @@ import { ChevronDown } from "lucide-react";
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
 import { Fireflies } from "@/components/site/Fireflies";
-import { SOCIALS, ARTIST_NAME, FEATURED_VIDEO } from "@/data/site";
+import { SOCIALS, ARTIST_NAME, FEATURED_VIDEO, ABOUT_STAGES as STAGES } from "@/data/site";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 // Mobile-only discrete slide gesture tuning. Desktop's continuous
@@ -109,77 +109,6 @@ const MemoryMedia = ({ src, scale, grade }) => {
   );
 };
 
-const STAGES = [
-  {
-    id: "the-beginning",
-    kicker: "My Story",
-    title: "Where It Began",
-    opening: true,
-    media: "/burnell-about-01.jpg",
-    body: [
-      "I started making music in my bedroom after a deep heartbreak when I was 15. Freestyle rapping and slam poetry were how I made sense of the pain.",
-      "I didn’t know it yet, but that heartbreak was a doorway.",
-    ],
-    showChevron: true,
-  },
-  {
-    id: "bridge-1",
-    bridge: true,
-    body: "Then the words found a beat.",
-    showChevron: true,
-  },
-  {
-    id: "the-craft",
-    title: "The Craft",
-    media: "/burnell-about-02.jpg",
-    body: [
-      "I taught myself how to produce beats and record, and started performing at open mic nights. What began as a way to process my emotions quickly became a devotion — full-length albums, collaborations with local artists, and a whole lot of nights on small stages.",
-    ],
-    showChevron: true,
-  },
-  {
-    id: "the-rise",
-    title: "The Rise",
-    media: "/burnell-about-03.jpg",
-    body: [
-      "Within a few short years I was hosting my own events, opening for huge names, and getting invited on tour with underground hip hop legends. I’ve shared stages with heroes like Snoop Dogg, Mac Miller, Wu-Tang Clan, Nas, and Atmosphere — and I’ve been releasing music and prayerforming regularly since 2009.",
-    ],
-    showChevron: true,
-  },
-  {
-    id: "the-service",
-    title: "Sacred Service",
-    media: "/burnell-about-04.jpg",
-    body: [
-      "I make music because it hurts not to. It’s my favorite way to transmute and alchemize what I feel, and it feels like a sacred service to humanity. I sing for the children, the plants, the animals, and all of humanity.",
-    ],
-    showChevron: true,
-  },
-  {
-    id: "today",
-    title: "Today",
-    media: "/burnell-about-05.jpg",
-    body: [
-      "Through the grace of God, I get to do what I love — travel the world, work with my heroes, and make amazing friends everywhere I go. I got here with the support of my fans, friends, community, mentors, and the Most High.",
-    ],
-    showChevron: true,
-  },
-  {
-    id: "portrait",
-    media: "/burnell-about-portrait.jpg",
-    body: ["We are one with nature. We are divine, powerful beings. And this existence is truly a magical gift."],
-    showChevron: true,
-  },
-  {
-    id: "performance",
-    video: true,
-    showChevron: true,
-  },
-  {
-    id: "invitation",
-    cta: true,
-  },
-];
 
 const N = STAGES.length;
 

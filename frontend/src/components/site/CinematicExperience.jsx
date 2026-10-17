@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { HeroContent } from "./HeroContent";
-import { HeroFrame, HERO_BG_FILTER, HERO_SCRIM } from "./HeroFrame";
-import { MobilePortal } from "./MobilePortal";
+import { WorldHome } from "./WorldHome";
 import { StardustMist } from "./StardustMist";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { makeGlowSprite } from "@/utils/glowSprite";
@@ -15,19 +14,23 @@ import { HOME_MEDIA, ARTIST_NAME, LOGO } from "@/data/site";
 const STILLS_MODE = !HOME_MEDIA.transition;
 
 // Thin switcher — mobile gets an entirely separate tap-to-enter component
-// (MobilePortal), desktop keeps its scroll-scrub exactly as it was. Kept as
+// (WorldHome), desktop keeps its scroll-scrub exactly as it was. Kept as
 // two fully separate component trees (not an isMobile branch inside one
 // component) so the desktop implementation's hooks are never conditionally
-// skipped across a breakpoint-crossing re-render. StardustMist is mounted
-// once here (outside that branch) since it handles its own mobile/desktop
-// behavior internally — this just guarantees it's Home-page-scoped, since
-// CinematicExperience only ever renders on Home.
+// skipped across a breakpoint-crossing re-render. StardustMist is desktop
+// only; the mobile world draws its own atmosphere.
 export const CinematicExperience = () => {
   const isMobile = useIsMobile();
   return (
     <>
-      <StardustMist />
-      {isMobile ? <MobilePortal /> : <DesktopExperience />}
+      {isMobile ? (
+        <WorldHome />
+      ) : (
+        <>
+          <StardustMist />
+          <DesktopExperience />
+        </>
+      )}
     </>
   );
 };
@@ -279,26 +282,20 @@ const DesktopExperience = () => {
         <div className="absolute inset-0 bg-black" style={{ opacity: heroLoopOp }}>
           {heroLoopBlocked || !HOME_MEDIA.heroLoop ? (
             <>
-              {/* Pushed back behind "smoked glass" (blur + dim) so the
-                  illustrated HeroFrame and the copy read as the foreground
-                  layer. Oversized wrapper hides the blur's soft edges. */}
-              <div className="absolute -inset-[4%]">
-                <img
-                  data-testid="hero-loop-poster"
-                  className="animate-kenburns absolute inset-0 h-full w-full object-cover"
-                  style={{ filter: HERO_BG_FILTER }}
-                  src={HOME_MEDIA.heroImage}
-                  alt=""
-                />
-              </div>
-              <div aria-hidden className="absolute inset-0" style={{ background: HERO_SCRIM }} />
+              <img
+                data-testid="hero-loop-poster"
+                className="animate-kenburns absolute inset-0 h-full w-full object-cover"
+                src={HOME_MEDIA.heroImage}
+                alt=""
+              />
+              {/* Legibility scrim for the centered Hero copy over a still. */}
+              <div aria-hidden className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.6) 100%)" }} />
             </>
           ) : (
             <video
               ref={heroLoopRef}
               data-testid="hero-loop-video"
               className="absolute inset-0 h-full w-full object-cover"
-              style={{ filter: HERO_BG_FILTER, transform: "scale(1.08)" }}
               src={HOME_MEDIA.heroLoop}
               poster={HOME_MEDIA.heroImage}
               muted
@@ -308,13 +305,6 @@ const DesktopExperience = () => {
               tabIndex={-1}
             />
           )}
-          {HOME_MEDIA.heroLoop && !heroLoopBlocked && <div aria-hidden className="absolute inset-0" style={{ background: HERO_SCRIM }} />}
-        </div>
-
-        {/* Living illustrated frame — above the Hero background, below the
-            copy. Enters with the Hero content and leaves with it. */}
-        <div className="pointer-events-none absolute inset-0 z-20">
-          <HeroFrame active={heroContentOp > 0.3} />
         </div>
 
         {/* Layer 1: Transition video — scrubbed via currentTime, fades out into the hero loop */}

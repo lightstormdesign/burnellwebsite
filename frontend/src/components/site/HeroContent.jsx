@@ -29,14 +29,7 @@ const wipeVMobile = {
 // content fades in (not immediately), bottom-right. Content driven entirely
 // by HERO_ANNOUNCEMENT in data/site.js so it's a one-line edit to update for
 // future releases, not a code change.
-// Lifted clear of the HeroFrame illustration: centered above the deer on
-// mobile, and inset past the right-hand forest edge on desktop.
-const BUBBLE_POSITION = {
-  mobile: { bottom: "19svh", left: 0, right: 0, display: "flex", justifyContent: "center" },
-  desktop: { bottom: "31svh", right: "calc(22svh + 1.5rem)" },
-};
-
-const AnnouncementBubble = ({ active, mobile }) => {
+const AnnouncementBubble = ({ active }) => {
   const [show, setShow] = useState(false);
   useEffect(() => {
     // Bubble is `position: fixed`, so it doesn't inherit the Hero layer's
@@ -53,9 +46,8 @@ const AnnouncementBubble = ({ active, mobile }) => {
   return (
     <div
       data-testid="hero-announcement"
-      className="pointer-events-none fixed z-40"
+      className="pointer-events-none fixed bottom-6 right-6 z-40"
       style={{
-        ...BUBBLE_POSITION[mobile ? "mobile" : "desktop"],
         opacity: show ? 1 : 0,
         transform: show ? "translateY(0)" : "translateY(16px)",
         transition: "opacity 0.8s ease, transform 0.8s ease",
@@ -208,7 +200,7 @@ export const HeroContent = ({ active, mobile = false }) => {
         </div>
       </motion.div>
 
-      <AnnouncementBubble active={active} mobile={mobile} />
+      <AnnouncementBubble active={active} />
     </>
   );
 };
