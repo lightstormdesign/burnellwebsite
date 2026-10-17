@@ -342,6 +342,7 @@ export const WorldHome = () => {
   const [layersReady, setLayersReady] = useState(false);
   const layersLoaded = useRef(0);
   const fetchAbortRef = useRef(null);
+  const recoveredRef = useRef(null); // the fresh transition video, if one was needed
   const [songOn, setSongOn] = useState(false);
   const mutedRef = useRef(false); // they turned the music off themselves
   const primingRef = useRef(false);
@@ -437,21 +438,19 @@ export const WorldHome = () => {
       .catch(() => setIntroDone(true));
   };
 
-  // Once the portal is up, get the loop and the transition decoded and
-  // ready so neither has to load when it's needed.
-  //
-  // The transition is downloaded whole first (into memory) and played from
-  // there, so it can never stall halfway waiting on the network. If it's
-  // tapped before that finishes, it just plays from the network.
+  // Once the portal is up, get the loop ready, and download the transition
+  // whole into memory and load it (load only: playing it briefly to warm it
+  // up, then pausing and rewinding it, is what made iOS freeze its picture
+  // partway through later). If it's tapped before the download finishes, it
+  // just plays from the network.
   useEffect(() => {
     if (!warm) return;
     prime(loopRef.current, () => !introEndedRef.current);
-    const primeTransition = () => {
-      primingRef.current = true;
-      prime(transitionRef.current, () => {
-        primingRef.current = false;
-        return !enteringRef.current;
-      });
+    const loadTransition = () => {
+      const v = transitionRef.current;
+      if (!v) return;
+      v.preload = "auto";
+      v.load();
     };
     let cancelled = false;
     const abort = typeof AbortController !== "undefined" ? new AbortController() : null;
@@ -464,9 +463,9 @@ export const WorldHome = () => {
         blobUrlRef.current = URL.createObjectURL(blob);
         v.src = blobUrlRef.current;
         dlog("transition downloaded");
-        primeTransition();
+        loadTransition();
       })
-      .catch(() => !cancelled && !enteringRef.current && primeTransition())
+      .catch(() => !cancelled && !enteringRef.current && loadTransition())
       .finally(() => !cancelled && setTransitionReady(true));
     return () => {
       cancelled = true;
@@ -525,21 +524,21 @@ export const WorldHome = () => {
   };
 
   // Freeze check during the transition. On iPhone the video can keep its
-  // clock running while its picture stops changing (seen on slow
-  // connections). Every 300ms, sample the current picture at 24x24; if it
-  // hasn't changed for 1.2s while the clock moved on, kick it once, and if
-  // it's still frozen, go on to the world rather than sit on a frozen frame.
+  // clock running while its picture stops changing. Every 300ms, sample the
+  // current picture at 24x24; if it hasn't changed for 0.6s, put a fresh
+  // video element over it to carry on from the same spot, and if that one
+  // freezes too, go on to the world rather than sit on a frozen frame.
   useEffect(() => {
     if (phase !== "transition") return;
-    const v = transitionRef.current;
+    const cur = () => recoveredRef.current || transitionRef.current;
     const c = document.createElement("canvas");
     c.width = c.height = 24;
     const ctx = c.getContext("2d", { willReadFrequently: true });
-    if (!v || !ctx) return;
+    if (!cur() || !ctx) return;
     let prev = null;
     let sameSince = 0;
-    let kicked = false;
     const iv = setInterval(() => {
+      const v = cur();
       if (v.readyState < 2 || v.paused || v.ended) return;
       let px;
       try {
@@ -560,14 +559,12 @@ export const WorldHome = () => {
         return;
       }
       if (!sameSince) sameSince = now;
-      if (now - sameSince < 1200) return;
-      if (!kicked) {
-        kicked = true;
+      if (now - sameSince < 600) return;
+      if (!recoveredRef.current) {
         sameSince = 0;
-        dlog(`picture frozen at t=${v.currentTime.toFixed(2)}: kick`);
-        try {
-          v.currentTime = v.currentTime + 0.001;
-        } catch (e) {}
+        prev = null;
+        dlog(`picture frozen at t=${v.currentTime.toFixed(2)}: fresh video`);
+        recoverTransition(v);
       } else {
         dlog("picture still frozen: on to the world");
         enterWorld();
@@ -598,6 +595,58 @@ export const WorldHome = () => {
     };
   }, [phase]);
 
+  // A frozen transition gets a brand-new video element (a new player) over
+  // it, from the same file, picking up where the frozen one is. The frozen
+  // one stays underneath until the new one is actually showing.
+  const recoverTransition = (v) => {
+    const t = v.currentTime;
+    const nv = document.createElement("video");
+    nv.muted = true;
+    nv.playsInline = true;
+    nv.setAttribute("playsinline", "");
+    nv.setAttribute("aria-hidden", "true");
+    nv.preload = "auto";
+    nv.className = v.className;
+    nv.style.cssText = v.style.cssText;
+    nv.style.zIndex = "31";
+    nv.style.opacity = "0";
+    nv.src = v.src;
+    nv.addEventListener("loadedmetadata", () => {
+      try {
+        nv.currentTime = t;
+      } catch (e) {}
+      nv.play().catch(enterWorld);
+    }, { once: true });
+    nv.addEventListener("playing", () => afterFirstFrame(nv, () => {
+      nv.style.opacity = "1";
+      v.pause();
+      v.style.visibility = "hidden";
+      dlog("fresh video showing");
+    }), { once: true });
+    nv.addEventListener("timeupdate", () => {
+      if (nv.duration && nv.duration - nv.currentTime <= LANDING_EARLY_S) setLandingEarly(true);
+    });
+    nv.addEventListener("ended", enterWorld);
+    v.parentNode.insertBefore(nv, v.nextSibling);
+    recoveredRef.current = nv;
+    clearTimeout(failsafeRef.current);
+    failsafeRef.current = setTimeout(enterWorld, TRANSITION_FAILSAFE_MS);
+  };
+
+  // Once in the world, a fresh transition video (if there was one) does
+  // what the original would have: holds its last frame, blurred and dimmed,
+  // until the layers are in, then fades out and goes.
+  useEffect(() => {
+    const nv = recoveredRef.current;
+    if (phase !== "world" || !nv) return;
+    nv.style.transition = "opacity 0.9s ease, filter 1.2s ease";
+    nv.style.filter = "blur(6px) brightness(0.5)";
+    if (!layersReady) return;
+    nv.style.opacity = "0";
+    const t = setTimeout(() => nv.remove(), 1000);
+    return () => clearTimeout(t);
+  }, [phase, layersReady]);
+
   const enterWorld = () => {
     clearTimeout(failsafeRef.current);
     clearInterval(stallRef.current);
@@ -618,12 +667,13 @@ export const WorldHome = () => {
   // still stuck, move on to the world rather than sit on a frozen frame.
   // (A picture that freezes while the clock runs is handled by drawing the
   // frames onto the canvas instead.)
-  const watchStall = (v) => {
+  const watchStall = (first) => {
     let lastT = -1;
     let lastMoveAt = performance.now();
     let kicks = 0;
     clearInterval(stallRef.current);
     stallRef.current = setInterval(() => {
+      const v = recoveredRef.current || first;
       if (v.ended) return clearInterval(stallRef.current);
       const now = performance.now();
       if (v.paused) {
@@ -653,7 +703,7 @@ export const WorldHome = () => {
   // inside a tap, which is what lets a phone play sound.
   const startSong = () => {
     const el = songRef.current;
-    if (!el) return;
+    if (!el || (debug && window.location.search.includes("nosong"))) return;
     el.play()
       .then(() => {
         songOnRef.current = true;
@@ -719,12 +769,8 @@ export const WorldHome = () => {
       return;
     }
     setPhase("transition");
-    try {
-      v.currentTime = 0;
-    } catch (e) {}
-    // already running (tapped while it was being primed): no new
-    // "playing" event will come, so hand off from here
-    if (!v.paused) afterFirstFrame(v, () => setTransitionPlaying(true));
+    // no rewind here: it has never played, and seeking a video right as it
+    // starts is another way to freeze its picture on iOS
     playTransition(v);
     watchStall(v);
     failsafeRef.current = setTimeout(enterWorld, TRANSITION_FAILSAFE_MS);
