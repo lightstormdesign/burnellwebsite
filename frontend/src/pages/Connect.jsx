@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
 import { Reveal } from "@/components/site/Reveal";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { ARTIST_NAME, LEADMAGNET_DESCRIPTION, TEXT_LIST_REWARD_URL } from "@/data/site";
+import { ARTIST_NAME } from "@/data/site";
 
 // The exact words a fan agrees to. Sent with every sign-up and kept with it
 // as their consent record, so if this ever changes, earlier fans still have
@@ -13,6 +13,18 @@ const CONSENT_TEXT =
   `Yes, text me about ${ARTIST_NAME}'s new music, shows and merch at the number above. ` +
   "Up to 4 msgs/month. Msg & data rates may apply. Reply STOP to opt out, HELP for help. " +
   "Consent is not a condition of any purchase. See the SMS privacy & terms below.";
+
+// The offer is edited in LightStorm's admin (like a Laylo drop) and comes
+// from GET /api/connect. This copy only shows if that can't be reached, and
+// matches the backend's own defaults.
+const FALLBACK_OFFER = {
+  kicker: "Free for the family",
+  headline: "Get my unreleased song, free",
+  subheadline:
+    "Join my text list and I'll send you a brand-new song nobody else has heard yet. Plus first word on new music and shows near you.",
+  button_text: "Send Me the Song",
+};
+const OFFER_WAIT_MS = 1500;
 
 const field =
   "w-full rounded-lg border border-white/15 bg-black/50 px-4 py-3 font-body text-sm text-white placeholder-white/35 outline-none transition-colors focus:border-[var(--sm-gold)]/70";
@@ -25,6 +37,25 @@ export default function Connect() {
   const [form, setForm] = useState({ name: "", phone: "", email: "", city: "", sms: false });
   const [status, setStatus] = useState("idle"); // idle | sending | done
   const [error, setError] = useState("");
+  const [offer, setOffer] = useState(null);
+  const [thanks, setThanks] = useState(null);
+
+  // Hidden until the offer arrives (or briefly times out), so the headline
+  // never visibly swaps from the fallback to the real one.
+  useEffect(() => {
+    let done = false;
+    const finish = (o) => {
+      if (done) return;
+      done = true;
+      setOffer({ ...FALLBACK_OFFER, ...o });
+    };
+    const t = setTimeout(() => finish({}), OFFER_WAIT_MS);
+    fetch("/api/connect")
+      .then((r) => (r.ok ? r.json() : {}))
+      .then(finish, () => finish({}));
+    return () => clearTimeout(t);
+  }, []);
+  const o = offer || FALLBACK_OFFER;
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: k === "sms" ? e.target.checked : e.target.value }));
 
@@ -42,6 +73,7 @@ export default function Connect() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Something went wrong. Please try again.");
+      setThanks(data);
       setStatus("done");
     } catch (err) {
       setError(err.message);
@@ -65,34 +97,36 @@ export default function Connect() {
         className={`relative z-10 mx-auto w-full max-w-md flex-1 px-6 text-center ${isMobile ? "pb-16" : "pb-28"}`}
         style={{ paddingTop: isMobile ? "calc(4rem + 6vh)" : "calc(8rem + 5vh)" }}
       >
-        <Reveal>
-          <span className="overline">The Text List</span>
-          <h1 className={`font-display font-normal text-[var(--sm-text)] text-legible ${isMobile ? "text-3xl" : "text-5xl"}`}>
-            Stay Connected.
+        <div style={{ opacity: offer ? 1 : 0, transition: "opacity 500ms ease" }}>
+          <span className="overline">{o.kicker}</span>
+          <h1 className={`font-display font-normal leading-tight text-[var(--sm-text)] text-legible ${isMobile ? "text-3xl" : "text-5xl"}`}>
+            {o.headline}
           </h1>
-          <p className="font-body mx-auto mt-4 max-w-sm text-sm font-light text-white/75 text-legible">{LEADMAGNET_DESCRIPTION}</p>
-        </Reveal>
+          <p className="font-body mx-auto mt-4 max-w-sm text-sm font-light text-white/75 text-legible">{o.subheadline}</p>
+        </div>
 
         <Reveal delay={0.15}>
           {status === "done" ? (
             <div data-testid="connect-done" className="animate-glow-pulse mt-10 rounded-xl border border-[var(--sm-gold)]/30 bg-black/55 px-6 py-10 backdrop-blur-sm">
               <img src="/burnell-emblem.png" alt="" aria-hidden className="mx-auto h-12 w-auto opacity-90" />
-              <p className="font-display mt-5 text-2xl text-white">You're in the family.</p>
-              {TEXT_LIST_REWARD_URL ? (
+              <p className="font-display mt-5 text-2xl text-white">{thanks?.thanks_headline || "You're in the family."}</p>
+              {thanks?.reward_url ? (
                 <>
-                  <p className="font-body mt-2 text-sm font-light text-white/65">Here's your unreleased song. Thank you for being here.</p>
+                  {thanks.thanks_text && <p className="font-body mt-2 text-sm font-light text-white/65">{thanks.thanks_text}</p>}
                   <a
-                    href={TEXT_LIST_REWARD_URL}
+                    href={thanks.reward_url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    data-testid="connect-reward"
                     className="mt-6 inline-flex rounded-full bg-[var(--sm-gold)] px-7 py-3 font-body text-sm font-medium text-black transition-colors hover:bg-[var(--sm-gold-light)]"
                   >
-                    Listen now
+                    {thanks.reward_label || "Listen Now"}
                   </a>
                 </>
               ) : (
+                // No reward link set yet: never promise "here's your song".
                 <p className="font-body mt-2 text-sm font-light text-white/65">
-                  You'll be the first to hear new music and show dates, straight from {ARTIST_NAME.split(" ")[0]}.
+                  Your song is coming to you first. Thank you for being here.
                 </p>
               )}
             </div>
@@ -118,7 +152,7 @@ export default function Connect() {
                 className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--sm-gold)] px-6 py-3 font-body text-sm font-medium text-black transition-colors hover:bg-[var(--sm-gold-light)] disabled:opacity-60"
               >
                 {status === "sending" && <Loader2 size={15} className="animate-spin" />}
-                Join the Family
+                {o.button_text}
               </button>
             </form>
           )}

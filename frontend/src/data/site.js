@@ -62,11 +62,8 @@ export const SOCIALS = links.socials;
 // site's own sign-up page (or an outside link, if one is ever set instead).
 export const LAYLO_URL = links.textList.url;
 export const LEADMAGNET_DESCRIPTION = links.textList.leadMagnet;
-// What a fan gets right after joining (e.g. a private link to the
-// unreleased song). Empty until there is one.
 // Our own page opens in place; an outside link opens in a new tab.
 export const TEXT_LIST_LINK_PROPS = LAYLO_URL.startsWith("/") ? {} : { target: "_blank", rel: "noopener noreferrer" };
-export const TEXT_LIST_REWARD_URL = links.textList.rewardUrl || null;
 
 // Offer cards render as "coming soon" while a link is empty.
 export const COMMUNITY_OFFERS = links.communityOffers.map((o) => ({ ...o, href: o.href || null }));
