@@ -72,6 +72,19 @@ export default function Music() {
 
   return (
     <div className="starfield relative min-h-screen">
+      {/* Background: a photo from his shoot, darkened so the players and
+          videos read on top (prayer hands on mobile, the wide mountain
+          shot on desktop). */}
+      <div className="fixed inset-0 z-0 overflow-hidden" aria-hidden>
+        <img
+          src={isMobile ? "/burnell-epk-12.webp" : "/burnell-epk-11.webp"}
+          alt=""
+          className="animate-kenburns h-full w-full object-cover"
+          style={{ objectPosition: isMobile ? "50% 30%" : "70% 35%" }}
+        />
+        <div className="absolute inset-0 bg-black/75" />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(0,0,0,0.6) 100%)" }} />
+      </div>
       {/* Ambient tint cycles slowly through the site's muted palette
           (blue -> turquoise -> gold -> deep gold -> blue); this page starts
           near the blue end of the loop. */}

@@ -215,19 +215,22 @@ export const MOBILE_HOME_MEDIA = {
 // 941x1672 canvas the layers were painted on: `start` is the landing (the
 // sky, matching the transition's last frame), `end` is the landed world.
 // `span` is the slice of the descent each layer moves in, so nearer layers
-// sweep in later and faster.
+// sweep in later and faster. `depth` is how fast a layer grows during the
+// story that follows (0 = far away, 1 = right in front of you), which keeps
+// the world drifting toward you in 3D the whole way down; `anchor` is the
+// canvas point it grows from (the meadow grows up from the bottom edge).
 export const WORLD_CANVAS = { width: 941, height: 1672 };
 export const WORLD_LAYERS = [
-  { key: "sky", src: "/burnell-world-sky.webp", w: 941, start: [0, 0], end: [0, 0], span: [0, 1] },
-  { key: "mountains", src: "/burnell-world-mountains.webp", w: 941, start: [0, 500], end: [0, -20], span: [0, 1] },
-  { key: "forest-far", src: "/burnell-world-forest-far.webp", w: 941, start: [0, 940], end: [0, 40], span: [0, 1] },
-  { key: "forest-near", src: "/burnell-world-forest-near.webp", w: 941, start: [0, 1240], end: [0, 90], span: [0.05, 1] },
-  { key: "stream", src: "/burnell-world-stream.webp", w: 941, start: [0, 1660], end: [0, 260], span: [0.1, 1] },
-  { key: "deer", src: "/burnell-world-deer.webp", w: 150, start: [400, 2073], end: [400, 673], span: [0.1, 1], breathe: true },
-  { key: "boulders", src: "/burnell-world-boulders.webp", w: 941, start: [0, 1850], end: [0, 150], span: [0.18, 1] },
-  { key: "trees-left", src: "/burnell-world-trees-left.webp", w: 470, start: [-300, 0], end: [-110, 0], span: [0, 1] },
-  { key: "trees-right", src: "/burnell-world-trees-right.webp", w: 471, start: [770, 0], end: [580, 0], span: [0, 1] },
-  { key: "meadow", src: "/burnell-world-meadow.webp", w: 1411, start: [-235, 1820], end: [-235, 920], span: [0.25, 1] },
+  { key: "sky", src: "/burnell-world-sky.webp", w: 941, start: [0, 0], end: [0, 0], span: [0, 1], depth: 0.04 },
+  { key: "mountains", src: "/burnell-world-mountains.webp", w: 941, start: [0, 500], end: [0, -20], span: [0, 1], depth: 0.1 },
+  { key: "forest-far", src: "/burnell-world-forest-far.webp", w: 941, start: [0, 940], end: [0, 40], span: [0, 1], depth: 0.18 },
+  { key: "forest-near", src: "/burnell-world-forest-near.webp", w: 941, start: [0, 1240], end: [0, 90], span: [0.05, 1], depth: 0.28 },
+  { key: "stream", src: "/burnell-world-stream.webp", w: 941, start: [0, 1660], end: [0, 260], span: [0.1, 1], depth: 0.4 },
+  { key: "deer", src: "/burnell-world-deer.webp", w: 150, start: [455, 2081], end: [455, 681], span: [0.1, 1], depth: 0.4 },
+  { key: "boulders", src: "/burnell-world-boulders.webp", w: 941, start: [0, 1850], end: [0, 150], span: [0.18, 1], depth: 0.55 },
+  { key: "trees-left", src: "/burnell-world-trees-left.webp", w: 470, start: [-300, 0], end: [-110, 0], span: [0, 1], depth: 0.7 },
+  { key: "trees-right", src: "/burnell-world-trees-right.webp", w: 471, start: [770, 0], end: [580, 0], span: [0, 1], depth: 0.7 },
+  { key: "meadow", src: "/burnell-world-meadow.webp", w: 1411, start: [-235, 1820], end: [-235, 920], span: [0.25, 1], depth: 1, anchor: [470, 1672] },
 ];
 
 export const LOGO = "/burnell-logo.webp";
@@ -263,7 +266,7 @@ export const ABOUT_STAGES = [
     title: "The Craft",
     media: "/burnell-about-02.webp",
     body: [
-      "I taught myself how to produce beats and record, and started performing at open mic nights. What began as a way to process my emotions quickly became a devotion — full-length albums, collaborations with local artists, and a whole lot of nights on small stages.",
+      "I taught myself how to produce beats and record, and started performing at open mic nights. What began as a way to process my emotions quickly became a devotion — full-length albums, collaborations with local artists, and a whole lot of nights on small stages. I put my entire heart and soul into it.",
     ],
     showChevron: true,
   },
@@ -272,7 +275,7 @@ export const ABOUT_STAGES = [
     title: "The Rise",
     media: "/burnell-about-03.webp",
     body: [
-      "Within a few short years I was hosting my own events, opening for huge names, and getting invited on tour with underground hip hop legends. I’ve shared stages with heroes like Snoop Dogg, Mac Miller, Wu-Tang Clan, Nas, and Atmosphere — and I’ve been releasing music and prayerforming regularly since 2009.",
+      "Within a few short years I was hosting my own events, opening for huge names, and getting invited on tour with underground hip hop legends. I’ve released many full-length albums, collaborated with dozens of artists, and shared stages with heroes like Snoop Dogg, Mac Miller, Wu-Tang Clan, Nas, and Atmosphere — and I’ve been releasing music and prayerforming regularly since 2009.",
     ],
     showChevron: true,
   },
@@ -281,7 +284,8 @@ export const ABOUT_STAGES = [
     title: "Sacred Service",
     media: "/burnell-about-04.webp",
     body: [
-      "I make music because it hurts not to. It’s my favorite way to transmute and alchemize what I feel, and it feels like a sacred service to humanity. I sing for the children, the plants, the animals, and all of humanity.",
+      "I make music because it hurts not to. It’s the most fun thing I’ve ever done, and my favorite way to transmute and alchemize what I feel. It feels like a sacred service to humanity. I sing for the children, the plants, the animals, and all of humanity.",
+      "I love to inspire others, uplift the world, and share the codes I’ve learned through life school.",
     ],
     showChevron: true,
   },
@@ -297,7 +301,10 @@ export const ABOUT_STAGES = [
   {
     id: "portrait",
     media: "/burnell-about-portrait.webp",
-    body: ["We are one with nature. We are divine, powerful beings. And this existence is truly a magical gift."],
+    body: [
+      "We are one with nature. We are divine, powerful beings. And this existence is truly a magical gift.",
+      "I’d love for my music to help people love life more, and appreciate nature more.",
+    ],
     showChevron: true,
   },
   {

@@ -23,9 +23,11 @@ import {
 //               loop's first frame; its last frame is the world at landing.
 //   world       the illustrated layers, starting exactly where the video
 //               ended: blurred and dimmed under the glowing B, the tagline,
-//               and a scroll cue. The first scroll lifts the blur and descends into
-//               the world (each layer at its own pace), then the world dims
-//               and the story chapters play one per swipe (scroll-snap).
+//               and a scroll cue. Scrolling lifts the blur and descends into
+//               the world (each layer at its own pace). Then the story
+//               chapters play, settling gently on each one (proximity
+//               scroll-snap), while the world keeps drifting toward you, each
+//               layer growing at its own rate, so it never stops being 3D.
 //
 // The world layers are mounted from the start, underneath everything, so
 // they've loaded by the time the video ends and the handoff is just the
@@ -33,8 +35,12 @@ import {
 // the story photos) only start downloading once the portal is on screen, so
 // the portal gets the connection to itself first.
 
-const DESCENT_SVH = 170; // scroll distance of the descent into the world
-const CHAPTER_SVH = 90; // scroll distance per story chapter
+const DESCENT_SVH = 260; // scroll distance of the descent into the world
+const CHAPTER_SVH = 110; // scroll distance per story chapter
+const SCROLL_EASE = 5; // how quickly the world catches up to the finger (per second)
+const STORY_ZOOM = 0.5; // how much the nearest layer grows over the whole story
+const STORY_DIM = 0.55; // how dark the world gets behind the chapters
+const ZOOM_CENTER = [WORLD_CANVAS.width / 2, WORLD_CANVAS.height / 2];
 const TRANSITION_FAILSAFE_MS = 9000;
 const WARM_DELAY_MS = 800; // after the intro starts playing
 const WARM_FALLBACK_MS = 3500; // if it never does (Low Power Mode)
@@ -84,7 +90,7 @@ const Chapter = ({ s, load }) => {
       <img
         src={load ? s.media : undefined}
         alt=""
-        className="max-h-[46svh] w-auto max-w-[88%] select-none object-contain"
+        className="max-h-[min(46svh,calc(100svh-26rem))] w-auto max-w-[88%] select-none object-contain"
         style={{ WebkitMaskImage: FEATHER, maskImage: FEATHER }}
       />
       {s.kicker && <span className="font-accent mt-4 text-[0.6rem] uppercase tracking-[0.4em] text-[var(--sm-gold)]">{s.kicker}</span>}
@@ -178,7 +184,7 @@ export const WorldHome = () => {
     if (phase === "world") {
       window.scrollTo(0, 0);
       root.style.overflow = "";
-      root.style.scrollSnapType = "y mandatory";
+      root.style.scrollSnapType = "y proximity";
     } else {
       root.style.overflow = "hidden";
     }
@@ -270,7 +276,7 @@ export const WorldHome = () => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const target = window.scrollY;
-      ys += (target - ys) * (1 - Math.exp(-dt * 3.2));
+      ys += (target - ys) * (1 - Math.exp(-dt * SCROLL_EASE));
       if (Math.abs(target - ys) < 0.3) ys = target;
 
       const stage = stageRef.current;
@@ -282,20 +288,29 @@ export const WorldHome = () => {
         const C = anchors[2].offsetTop - D;
         const key = `${W}|${H}|${ys.toFixed(1)}|${target}`;
         if (key !== lastKey) {
+          const sizeChanged = !lastKey.startsWith(`${W}|${H}|`);
           lastKey = key;
           // cover-fit the painted canvas, centered (same fit as the video)
           const k = Math.max(W / WORLD_CANVAS.width, H / WORLD_CANVAS.height);
           const ox = (W - WORLD_CANVAS.width * k) / 2;
           const oy = (H - WORLD_CANVAS.height * k) / 2;
           const p = clamp01(ys / D);
+          // story: 0 at the end of the descent, 1 at the last chapter
+          const z = clamp01((ys - D) / (C * CHAPTERS.length));
           WORLD_LAYERS.forEach((L, i) => {
             const el = layerRefs.current[i];
             if (!el) return;
+            if (sizeChanged) el.style.width = `${(L.w * k).toFixed(1)}px`;
             const t = smooth(clamp01((p - L.span[0]) / (L.span[1] - L.span[0])));
             const x = L.start[0] + (L.end[0] - L.start[0]) * t;
             const y = L.start[1] + (L.end[1] - L.start[1]) * t;
-            el.style.width = `${(L.w * k).toFixed(1)}px`;
-            el.style.transform = `translate3d(${(ox + x * k).toFixed(1)}px, ${(oy + y * k).toFixed(1)}px, 0)`;
+            // grow from the layer's anchor: nearer layers faster, so they
+            // slide past each other like you're moving into the world
+            const g = 1 + L.depth * STORY_ZOOM * z;
+            const [ax, ay] = L.anchor || ZOOM_CENTER;
+            const gx = ax + (x - ax) * g;
+            const gy = ay + (y - ay) * g;
+            el.style.transform = `translate3d(${(ox + gx * k).toFixed(1)}px, ${(oy + gy * k).toFixed(1)}px, 0) scale(${g.toFixed(4)})`;
           });
 
           // landing: blurred + dimmed under the copy, lifting as the descent begins
@@ -303,7 +318,7 @@ export const WorldHome = () => {
           if (blurRef.current) blurRef.current.style.filter = veil > 0.02 ? `blur(${(6 * veil).toFixed(1)}px)` : "none";
           // story: the world dims behind the chapters
           const q = (ys - D) / C;
-          const storyDim = 0.66 * smooth(clamp01(q / 0.6));
+          const storyDim = STORY_DIM * smooth(clamp01(q / 0.6));
           if (shadeRef.current) shadeRef.current.style.opacity = Math.max(0.5 * veil, storyDim).toFixed(3);
           // the landing copy dissolves on the very first bit of scroll
           if (landingRef.current) {
@@ -314,7 +329,7 @@ export const WorldHome = () => {
           chapterRefs.current.forEach((el, i) => {
             if (!el) return;
             const d = Math.abs(q - (i + 1));
-            const o = d <= 0.18 ? 1 : d >= 0.5 ? 0 : (0.5 - d) / 0.32;
+            const o = d <= 0.22 ? 1 : d >= 0.5 ? 0 : (0.5 - d) / 0.28;
             el.style.opacity = o.toFixed(3);
             el.style.pointerEvents = o > 0.6 ? "auto" : "none";
             el.style.transform = `translateY(${((q - (i + 1)) * -24).toFixed(1)}px)`;
@@ -342,8 +357,8 @@ export const WorldHome = () => {
               src={warm ? L.src : undefined}
               alt=""
               decoding="async"
-              className={`absolute left-0 top-0 max-w-none select-none ${L.breathe ? "animate-deer-breathe" : ""}`}
-              style={{ willChange: "transform" }}
+              className="absolute left-0 top-0 max-w-none select-none"
+              style={{ willChange: "transform", transformOrigin: "0 0" }}
             />
           ))}
         </div>
@@ -492,7 +507,7 @@ export const WorldHome = () => {
           type="button"
           onClick={toggleSong}
           aria-label={songOn ? "Pause music" : "Play music"}
-          className="fixed bottom-5 right-5 z-50 flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/30 text-[var(--sm-gold-light)] backdrop-blur-sm"
+          className="fixed left-[18px] top-[7px] z-[60] flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/30 text-[var(--sm-gold-light)] backdrop-blur-sm"
         >
           {songOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
         </button>
@@ -505,7 +520,8 @@ export const WorldHome = () => {
         aria-hidden
       >
         {[0, DESCENT_SVH, ...CHAPTERS.map((_, i) => DESCENT_SVH + CHAPTER_SVH * (i + 1))].map((top, i) => (
-          <div key={i} ref={(el) => (anchorRefs.current[i] = el)} style={{ ...snap, top: `${top}svh` }} />
+          // the descent scrolls freely; only the chapters are snap points
+          <div key={i} ref={(el) => (anchorRefs.current[i] = el)} style={{ ...snap, top: `${top}svh`, scrollSnapAlign: i >= 2 ? "start" : "none" }} />
         ))}
       </div>
     </div>
