@@ -43,8 +43,8 @@ import {
 // the story photos) only start downloading once the portal is on screen, so
 // the portal gets the connection to itself first.
 
-const DESCENT_SVH = 260; // scroll distance of the descent into the world
-const CHAPTER_SVH = 110; // scroll distance per story chapter
+const DESCENT_SVH = 236; // scroll distance of the descent into the world
+const CHAPTER_SVH = 100; // scroll distance per story chapter
 const SCROLL_EASE = 5; // how quickly the world catches up to the finger (per second)
 const STORY_ZOOM = 0.5; // how much the nearest layer grows over the whole story
 const STORY_DIM = 0.55; // how dark the world gets behind the chapters
