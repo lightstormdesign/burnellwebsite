@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Burnell Washburn — Edit Website</title>
+  </head>
+  <body>
+    <!--
+      Burnell's content editor (Decap CMS). Everything here edits the files in
+      frontend/src/content/ in this site's own GitHub repo; each save is a
+      commit, and Vercel redeploys the site about a minute later. Sign-in is
+      GitHub, through /api/auth and /api/callback on this same site.
+    -->
+    <script>
+      window.CMS_MANUAL_INIT = true;
+    </script>
+    <!-- Decap CMS 3.16.3, served from this site (no outside CDN) -->
+    <script src="/admin/decap/decap-cms.js"></script>
+    <script>
+      // Every field is optional unless marked required: a blank kicker or
+      // link should never block a save.
+      var f = function (name, label, widget, extra) {
+        return Object.assign({ name: name, label: label, widget: widget || "string", required: false }, extra || {});
+      };
+      var req = function (field) {
+        return Object.assign(field, { required: true });
+      };
+      var strings = function (name, label, hint) {
+        return f(name, label, "list", { field: f("item", label, "string"), hint: hint });
+      };
+      var linkList = function (name, label, hint) {
+        return f(name, label, "list", {
+          summary: "{{fields.label}}",
+          hint: hint,
+          fields: [req(f("label", "Label")), f("href", "Link (URL)")],
+        });
+      };
+      var image = function (name, label, hint) {
+        return f(name, label, "image", { choose_url: true, hint: hint });
+      };
+
+      CMS.init({
+        config: {
+          load_config_file: false,
+          backend: {
+            name: "github",
+            repo: "lightstormdesign/burnellwebsite",
+            branch: "main",
+            base_url: window.location.origin,
+            auth_endpoint: "api/auth",
+            commit_messages: { update: "Content: update {{slug}}" },
+          },
+          site_url: window.location.origin,
+          display_url: window.location.origin,
+          logo_url: "/burnell-logo.webp",
+          media_folder: "frontend/public/uploads",
+          public_folder: "/uploads",
+          collections: [
+            {
+              name: "website",
+              label: "Website",
+              editor: { preview: false },
+              files: [
+                {
+                  name: "home",
+                  label: "Home",
+                  file: "frontend/src/content/home.json",
+                  fields: [
+                    req(f("tagline", "Tagline", "string", { hint: "Under the B on the phone, and on the desktop hero." })),
+                    req(strings("genreTags", "Genre line", "Each item shows in small capitals, separated by dots.")),
+                    req(f("heroBio", "Bio (desktop)", "text")),
+                    req(f("heroBioMobile", "Bio (phone, shorter)", "text")),
+                    req(strings("bio", "Short bio paragraphs", "Used on other pages.")),
+                    f("announcement", "Announcement pop-up", "object", {
+                      hint: "The little card bottom-left that points at the new release.",
+                      fields: [
+                        f("kicker", "Small label (phone)", "string", { hint: "e.g. New song" }),
+                        f("message", "Message (desktop)"),
+                        f("linkLabel", "Link text (desktop)"),
+                      ],
+                    }),
+                  ],
+                },
+                {
+                  name: "release",
+                  label: "New Release (CD page)",
+                  file: "frontend/src/content/release.json",
+                  fields: [
+                    req(f("title", "Title")),
+                    f("kind", "Kind", "string", { hint: "e.g. New Single, New Album" }),
+                    f("subtitle", "Subtitle"),
+                    req(image("cover", "CD cover (square)")),
+                    image("disc", "Disc face (square, transparent PNG/WebP)"),
+                    image("insideSpread", "Inside of the case (wide photo)"),
+                    f("audioClip", "Clip that plays as the case opens", "file", { choose_url: true, hint: "Optional: a short MP3/M4A." }),
+                    linkList("links", "Listen links", "The buttons that appear once the CD opens."),
+                  ],
+                },
+                {
+                  name: "story",
+                  label: "Story (About)",
+                  file: "frontend/src/content/story.json",
+                  fields: [
+                    req(
+                      f("chapters", "Chapters", "list", {
+                        hint: "Drag to reorder. Shown one per swipe on the phone, and on the About page.",
+                        summary: "{{fields.type}} · {{fields.title}}",
+                        fields: [
+                          req(
+                            f("type", "Type", "select", {
+                              default: "photo",
+                              options: [
+                                { label: "Photo + text", value: "photo" },
+                                { label: "Bridge (one italic line, no photo)", value: "bridge" },
+                                { label: "Performance video", value: "video" },
+                                { label: "Closing invitation", value: "invitation" },
+                              ],
+                            })
+                          ),
+                          f("id", "ID (no spaces)", "string", { hint: "A short unique name, e.g. the-rise" }),
+                          f("kicker", "Small label above the title"),
+                          f("title", "Title"),
+                          image("image", "Photo"),
+                          f("body", "Paragraphs", "list", { field: f("paragraph", "Paragraph", "text") }),
+                        ],
+                      })
+                    ),
+                  ],
+                },
+                {
+                  name: "tour",
+                  label: "Tour & Booking",
+                  file: "frontend/src/content/tour.json",
+                  fields: [
+                    f("bookingStatus", "Booking status", "string", { hint: "e.g. Now Booking for 2027" }),
+                    f("bookingCopy", "Booking line"),
+                    f("flyerTitle", "Shows card title"),
+                    f("introLine1", "Intro line 1"),
+                    f("introLine2", "Intro line 2"),
+                    f("ticketsUrl", "Tickets link (Bandsintown)"),
+                    f("dates", "Shows", "list", {
+                      summary: "{{fields.date}} — {{fields.event}}",
+                      fields: [req(f("date", "Date", "string", { hint: "e.g. Jun 14 or TBA" })), req(f("event", "Event")), f("location", "Location")],
+                    }),
+                  ],
+                },
+                {
+                  name: "music",
+                  label: "Music",
+                  file: "frontend/src/content/music.json",
+                  fields: [
+                    f("subtitle", "Intro line", "text"),
+                    f("spotifyArtistUrl", "Spotify artist link", "string", { hint: "Drives the Spotify player." }),
+                    linkList("platformLinks", "Platform buttons"),
+                    f("featuredVideo", "Featured video", "object", {
+                      fields: [req(f("id", "YouTube video ID", "string", { hint: "The part after watch?v= in the link." })), f("title", "Title")],
+                    }),
+                    f("videos", "Music videos", "list", {
+                      summary: "{{fields.title}}",
+                      fields: [req(f("id", "YouTube video ID", "string", { hint: "The part after watch?v= in the link." })), req(f("title", "Title"))],
+                    }),
+                  ],
+                },
+                {
+                  name: "epk",
+                  label: "EPK (Press Kit)",
+                  file: "frontend/src/content/epk.json",
+                  fields: [
+                    f("subtitle", "Subtitle"),
+                    f("bannerText", "Banner line"),
+                    f("stats", "Stats", "list", { summary: "{{fields.value}} {{fields.label}}", fields: [req(f("value", "Number")), req(f("label", "Label"))] }),
+                    strings("sharedStages", "Shared stages with"),
+                    strings("producedFor", "Produced for"),
+                    strings("writtenWith", "Written with"),
+                    strings("festivals", "Festivals"),
+                    strings("venues", "Notable venues"),
+                    strings("pressFeatures", "Press features"),
+                    linkList("pressLinks", "Press links"),
+                  ],
+                },
+                {
+                  name: "links",
+                  label: "Links, Contact & Community",
+                  file: "frontend/src/content/links.json",
+                  fields: [
+                    linkList("socials", "Social links"),
+                    f("textList", "Text list (Laylo)", "object", {
+                      fields: [f("url", "Laylo link"), f("leadMagnet", "What fans get for joining", "text")],
+                    }),
+                    f("communityOffers", "Community offers", "list", {
+                      summary: "{{fields.label}}",
+                      hint: "A card with no link shows as coming soon.",
+                      fields: [req(f("label", "Name")), f("description", "Description", "text"), f("href", "Link (URL)")],
+                    }),
+                    f("contact", "Contact", "object", {
+                      fields: [f("email", "Email"), f("phone", "Phone"), f("location", "Location")],
+                    }),
+                    f("bookingEmail", "Booking email"),
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+    </script>
+  </body>
+</html>

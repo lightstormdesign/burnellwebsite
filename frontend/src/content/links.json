@@ -1,0 +1,48 @@
+{
+  "socials": [
+    {
+      "label": "Instagram",
+      "href": "https://www.instagram.com/burnellwashburn"
+    },
+    {
+      "label": "Facebook",
+      "href": "https://www.facebook.com/burnellwashburn"
+    },
+    {
+      "label": "YouTube",
+      "href": "https://www.youtube.com/burnellwashburn"
+    }
+  ],
+  "textList": {
+    "url": "#laylo-pending",
+    "leadMagnet": "Get a brand-new unreleased song plus behind-the-scenes content, straight to your phone."
+  },
+  "communityOffers": [
+    {
+      "label": "Patreon",
+      "description": "Go deeper — exclusive music, process, and community.",
+      "href": ""
+    },
+    {
+      "label": "Beat Packs",
+      "description": "Original Burnell Washburn production for your own creations.",
+      "href": ""
+    },
+    {
+      "label": "Greatest Hits",
+      "description": "A collection of the songs that built the journey.",
+      "href": ""
+    },
+    {
+      "label": "Quantum Visions",
+      "description": "",
+      "href": ""
+    }
+  ],
+  "contact": {
+    "email": "burnellwashburn@gmail.com",
+    "phone": "",
+    "location": "Salt Lake City, UT"
+  },
+  "bookingEmail": "burnellwashburn@gmail.com"
+}

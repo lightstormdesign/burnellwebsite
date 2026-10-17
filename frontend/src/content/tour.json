@@ -1,0 +1,25 @@
+{
+  "bookingStatus": "Now Booking for 2027",
+  "bookingCopy": "Festivals, concerts, retreats, ceremonies, and private events.",
+  "flyerTitle": "Upcoming Shows",
+  "introLine1": "From the mountains of Utah to stages around the world —",
+  "introLine2": "come celebrate life with me.",
+  "ticketsUrl": "https://www.bandsintown.com/a/967902",
+  "dates": [
+    {
+      "date": "TBA",
+      "event": "Illuminati Congo & Sol Disciple",
+      "location": "Boulder, Colorado"
+    },
+    {
+      "date": "TBA",
+      "event": "Convergence Wellness Campout",
+      "location": "Location TBA"
+    },
+    {
+      "date": "TBA",
+      "event": "Private Show",
+      "location": "Lava Hot Springs, Idaho"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "title": "Only Hueman",
+  "kind": "New Single",
+  "subtitle": "The new song from Burnell Washburn.",
+  "cover": "/burnell-cd-front-cover.webp",
+  "disc": "/burnell-cd-disc-face.webp",
+  "insideSpread": "/burnell-cd-inside-spread.webp",
+  "audioClip": "",
+  "links": [
+    {
+      "label": "Spotify",
+      "href": "https://open.spotify.com/artist/0mfsTVqnzTGoZorpqo8khM"
+    },
+    {
+      "label": "Apple Music",
+      "href": "https://music.apple.com/us/artist/burnell-washburn/432611468"
+    },
+    {
+      "label": "YouTube",
+      "href": "https://www.youtube.com/burnellwashburn"
+    }
+  ]
+}

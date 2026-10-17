@@ -21,6 +21,17 @@ npm start
 - **Removed**: Shop (merch is in-person only), Sync EPK.
 - **Pages**: Home, About, Music, Tour, Community, EPK, Contact. On mobile there is no separate About page: the story is on Home, and About (menu or `/about`) glides down to its first chapter. Desktop keeps the About page until the desktop world exists.
 
+## Editing the site (CMS)
+
+Everything Burnell would want to change (words, links, tour dates, the new release, the story chapters, the EPK) lives in `frontend/src/content/*.json`, and he edits it himself at **`/admin`**: a visual editor (Decap CMS 3.16.3, served from this site, no outside service). Each save is a commit to this repo, and Vercel redeploys about a minute later. `frontend/src/data/site.js` reads those files and keeps exporting the same names the components use; code-level things (media, the world's layers, navigation) stay in `site.js`.
+
+**One-time setup** (sign-in is GitHub, handled by `frontend/api/auth.js` and `frontend/api/callback.js` on this site):
+1. GitHub → Settings → Developer settings → OAuth Apps → New OAuth App. Homepage URL: the site's URL. Authorization callback URL: `https://<site>/api/callback`.
+2. In Vercel → Project → Settings → Environment Variables, add `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` from that app, then redeploy.
+3. Give Burnell's GitHub account write access to this repo (or let him log in with the owner account).
+
+If the site moves to a custom domain, update the OAuth App's callback URL to match.
+
 ## Pending from Burnell
 
 - [ ] "Only Hueman" streaming links (the buttons point at his artist profiles for now) and a short clip to play as the CD opens (`NEW_RELEASE`)
