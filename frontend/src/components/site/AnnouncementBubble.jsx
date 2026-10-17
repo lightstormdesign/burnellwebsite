@@ -36,7 +36,7 @@ export const AnnouncementBubble = ({ active, compact = false }) => {
         } ${compact ? "gap-2.5 py-2 pl-2 pr-3.5" : "gap-3 px-4 py-3"}`}
       >
         <img
-          src={HERO_ANNOUNCEMENT.image}
+          src={active ? HERO_ANNOUNCEMENT.image : undefined}
           alt=""
           className={`rounded-md object-cover shadow-lg ${compact ? "h-10 w-10" : "h-12 w-12"}`}
         />

@@ -338,7 +338,10 @@ export const WorldHome = () => {
   const songRef = useRef(null);
   const beatMapRef = useRef(null); // Uint8Array, one value per 1/30s of the song
   const phaseRef = useRef("portal");
-  const canvasRef = useRef(null);
+  const [transitionReady, setTransitionReady] = useState(false); // downloaded (or given up on)
+  const [layersReady, setLayersReady] = useState(false);
+  const layersLoaded = useRef(0);
+  const fetchAbortRef = useRef(null);
   const [songOn, setSongOn] = useState(false);
   const mutedRef = useRef(false); // they turned the music off themselves
   const primingRef = useRef(false);
@@ -357,7 +360,12 @@ export const WorldHome = () => {
   // ?debug&solo: never load the world (layers, creatures, story photos), to
   // test the transition video entirely on its own
   const solo = debug && window.location.search.includes("solo");
-  const loadWorld = warm && !solo;
+  // The world only starts loading once the transition is over: until then
+  // the connection belongs to the portal, the transition and the song (on a
+  // slow connection, background downloads during the transition froze it).
+  // The B and the bio hold people while the layers arrive, over the
+  // transition's last frame, which is the same picture.
+  const loadWorld = phase === "world" && !solo;
   const debugRef = useRef(null);
   const debugLines = useRef([]);
   const t0Ref = useRef(typeof performance !== "undefined" ? performance.now() : 0);
@@ -446,16 +454,20 @@ export const WorldHome = () => {
       });
     };
     let cancelled = false;
-    fetch(MEDIA.transition)
+    const abort = typeof AbortController !== "undefined" ? new AbortController() : null;
+    fetchAbortRef.current = abort;
+    fetch(MEDIA.transition, abort ? { signal: abort.signal } : undefined)
       .then((r) => (r.ok ? r.blob() : Promise.reject()))
       .then((blob) => {
         const v = transitionRef.current;
         if (cancelled || enteringRef.current || !v) return;
         blobUrlRef.current = URL.createObjectURL(blob);
         v.src = blobUrlRef.current;
+        dlog("transition downloaded");
         primeTransition();
       })
-      .catch(() => !cancelled && !enteringRef.current && primeTransition());
+      .catch(() => !cancelled && !enteringRef.current && primeTransition())
+      .finally(() => !cancelled && setTransitionReady(true));
     return () => {
       cancelled = true;
     };
@@ -489,58 +501,79 @@ export const WorldHome = () => {
   }, [phase]);
 
   useEffect(() => {
-    if (!warm || beatMapRef.current) return;
+    if (phase !== "world" || beatMapRef.current) return;
     fetch(BEAT_MAP)
       .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject()))
       .then((b) => (beatMapRef.current = new Uint8Array(b)))
       .catch(() => {});
-  }, [warm]);
+  }, [phase]);
 
-  // During the transition, copy each new video frame onto the canvas.
+  // The transition's last frame stays up (blurred and dimmed, exactly like
+  // the world's landing) until every layer has arrived, then fades out. If
+  // they take too long, it fades anyway.
+  useEffect(() => {
+    if (phase !== "world" || layersReady) return;
+    const t = setTimeout(() => setLayersReady(true), 6000);
+    return () => clearTimeout(t);
+  }, [phase, layersReady]);
+  const onLayerLoad = () => {
+    layersLoaded.current += 1;
+    if (layersLoaded.current >= WORLD_LAYERS.length) {
+      dlog("world layers loaded");
+      setLayersReady(true);
+    }
+  };
+
+  // Freeze check during the transition. On iPhone the video can keep its
+  // clock running while its picture stops changing (seen on slow
+  // connections). Every 300ms, sample the current picture at 24x24; if it
+  // hasn't changed for 1.2s while the clock moved on, kick it once, and if
+  // it's still frozen, go on to the world rather than sit on a frozen frame.
   useEffect(() => {
     if (phase !== "transition") return;
     const v = transitionRef.current;
-    const c = canvasRef.current;
-    const ctx = c?.getContext("2d", { alpha: false });
+    const c = document.createElement("canvas");
+    c.width = c.height = 24;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
     if (!v || !ctx) return;
-    let raf = 0;
-    let lastT = -1;
-    let draws = 0;
-    let shown = false;
-    let lastLog = performance.now();
-    const draw = () => {
-      // only when the video has moved on by about a frame (it's 30fps; the
-      // screen may be 60 or 120)
-      if (v.readyState >= 2 && (lastT < 0 || Math.abs(v.currentTime - lastT) >= 0.028)) {
-        lastT = v.currentTime;
-        try {
-          if (c.width !== v.videoWidth) {
-            c.width = v.videoWidth;
-            c.height = v.videoHeight;
-          }
-          ctx.drawImage(v, 0, 0, c.width, c.height);
-          draws++;
-          if (!shown) {
-            shown = true;
-            c.style.visibility = "visible";
-          }
-        } catch (e) {
-          // couldn't draw it: leave the video itself on screen
-          dlog(`canvas draw failed: ${e.name}`);
-          c.style.visibility = "hidden";
-          return;
-        }
+    let prev = null;
+    let sameSince = 0;
+    let kicked = false;
+    const iv = setInterval(() => {
+      if (v.readyState < 2 || v.paused || v.ended) return;
+      let px;
+      try {
+        ctx.drawImage(v, 0, 0, 24, 24);
+        px = ctx.getImageData(0, 0, 24, 24).data;
+      } catch (e) {
+        return clearInterval(iv);
       }
+      let diff = Infinity;
+      if (prev) {
+        diff = 0;
+        for (let i = 0; i < px.length; i += 4) diff += Math.abs(px[i] - prev[i]) + Math.abs(px[i + 1] - prev[i + 1]);
+      }
+      prev = px;
       const now = performance.now();
-      if (debug && now - lastLog > 1000) {
-        dlog(`canvas ${draws} frames/s at t=${v.currentTime.toFixed(2)}`);
-        draws = 0;
-        lastLog = now;
+      if (diff > 24) {
+        sameSince = 0;
+        return;
       }
-      raf = requestAnimationFrame(draw);
-    };
-    raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
+      if (!sameSince) sameSince = now;
+      if (now - sameSince < 1200) return;
+      if (!kicked) {
+        kicked = true;
+        sameSince = 0;
+        dlog(`picture frozen at t=${v.currentTime.toFixed(2)}: kick`);
+        try {
+          v.currentTime = v.currentTime + 0.001;
+        } catch (e) {}
+      } else {
+        dlog("picture still frozen: on to the world");
+        enterWorld();
+      }
+    }, 300);
+    return () => clearInterval(iv);
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // No page scroll until the world is entered; scroll-snap only in the world.
@@ -676,6 +709,7 @@ export const WorldHome = () => {
     if (enteringRef.current) return;
     enteringRef.current = true;
     primingRef.current = false;
+    if (!transitionReady) fetchAbortRef.current?.abort();
     dlog(`tap: video rs=${transitionRef.current?.readyState} ${transitionRef.current?.src.startsWith("blob:") ? "blob" : "network"}, song rs=${songRef.current?.readyState}`);
     setWarm(true);
     if (!mutedRef.current && !songOn) startSong();
@@ -852,6 +886,8 @@ export const WorldHome = () => {
               <img
                 ref={(el) => (layerRefs.current[i] = el)}
                 src={loadWorld ? L.src : undefined}
+                onLoad={onLayerLoad}
+                onError={onLayerLoad}
                 alt=""
                 decoding="async"
                 className="absolute left-0 top-0 max-w-none select-none"
@@ -932,7 +968,7 @@ export const WorldHome = () => {
             className="absolute inset-0 flex items-center justify-center"
             style={{ opacity: 0, pointerEvents: "none" }}
           >
-            <Chapter s={s} load={loadWorld} />
+            <Chapter s={s} load={loadWorld && layersReady} />
           </div>
         ))}
       </div>
@@ -947,16 +983,21 @@ export const WorldHome = () => {
           // fully visible (but underneath the portal) until the world: an
           // invisible video isn't drawn on iOS, so it would never report
           // its first frame and the portal would never hand off
-          opacity: phase === "world" ? 0 : 1,
+          // once it's over it holds its last frame (= the world's landing),
+          // blurred and dimmed like the landing, until the layers are in
+          opacity: phase === "world" && (layersReady || !transitionPlaying) ? 0 : 1,
+          filter: phase === "world" ? "blur(6px) brightness(0.5)" : "none",
           // fade out over the world only if it actually played (About can
           // skip straight to the world without it)
-          transition: phase === "world" && transitionPlaying ? "opacity 0.7s ease" : "none",
+          transition: phase === "world" && transitionPlaying ? "opacity 0.9s ease, filter 1.2s ease" : "none",
           pointerEvents: "none",
         }}
         src={MEDIA.transition}
         muted
         playsInline
-        preload={warm ? "auto" : "none"}
+        // never loads itself: the in-memory copy is fetched separately (the
+        // network copy only plays if they tap before that's done)
+        preload="none"
         onPlaying={(e) => {
           if (primingRef.current || !enteringRef.current) return;
           afterFirstFrame(e.currentTarget, () => setTransitionPlaying(true));
@@ -968,23 +1009,6 @@ export const WorldHome = () => {
         onEnded={enterWorld}
         tabIndex={-1}
       />
-      {/* What's actually seen during the transition: its frames copied onto a
-          canvas. iOS sometimes stops putting the video itself on screen
-          partway (its clock runs on, it even seeks, but the picture stays
-          frozen); drawing the frames ourselves doesn't go through that. The
-          video stays underneath as the fallback. */}
-      <canvas
-        ref={canvasRef}
-        aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 z-30 w-full object-cover"
-        style={{
-          height: "100lvh",
-          visibility: "hidden",
-          opacity: phase === "world" ? 0 : 1,
-          transition: phase === "world" && transitionPlaying ? "opacity 0.7s ease" : "none",
-        }}
-      />
-
       {/* Portal: intro, then hold loop, until the tap (and until the
           transition's first frame is actually on screen) */}
       <button
@@ -1049,9 +1073,9 @@ export const WorldHome = () => {
         </div>
       </button>
 
-      {/* fully buffered once the portal is up, so on the tap it starts at once
-          rather than a second later in the middle of the transition */}
-      <audio ref={songRef} src={MEDIA.song} preload={warm ? "auto" : "metadata"} loop playsInline />
+      {/* buffered once the transition has downloaded (it comes first), so on
+          the tap it can start at once */}
+      <audio ref={songRef} src={MEDIA.song} preload={transitionReady ? "auto" : "none"} loop playsInline />
       {debug && (
         <pre
           ref={debugRef}

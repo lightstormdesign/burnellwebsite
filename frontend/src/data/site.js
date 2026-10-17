@@ -231,7 +231,7 @@ export const MOBILE_HOME_MEDIA = {
   portalLoopPoster: "/burnell-portal-loop-mobile.webp",
   transition: "/burnell-transition-mobile.mp4",
   // "Beautiful", started by the Tap to Enter (half volume)
-  song: "/burnell-beautiful.mp3",
+  song: "/burnell-beautiful.m4a",
 };
 
 // Burnell's illustrated world, back to front. Coordinates are px on the
