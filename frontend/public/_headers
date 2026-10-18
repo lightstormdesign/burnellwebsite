@@ -1,0 +1,5 @@
+# Cloudflare Pages: same caching as vercel.json. Build files have a hash in
+# their name, so they can be cached for good. Everything else (pages, media)
+# gets Pages' default: cached at the edge, checked by browsers on each visit.
+/static/*
+  Cache-Control: public, max-age=31536000, immutable
