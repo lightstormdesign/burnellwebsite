@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-// One Flower of Life on the right side of the Portal screen, the same
+// One Flower of Life in the top-right corner of the Portal screen, the same
 // 19-circle construction as Cody Shepherd's portal blooms (1 center + a
 // ring of 6 + a ring of 12, each circle's radius equal to its spacing),
 // generated so the geometry is exact. At its brightest it's 0.23 (Cody's
@@ -41,13 +41,15 @@ const Flower = ({ strokeWidth, className, style }) => {
 const PEAK_OPACITY = 0.23; // Cody's is 0.26
 const SIZE = "44vmax"; // same as Cody's
 
-export const PortalFlower = ({ spin = false }) => (
+export const PortalFlower = ({ spin = false, top = "8%" }) => (
   <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
     <div
       className="absolute aspect-square -translate-x-1/2 -translate-y-1/2"
       style={{
-        left: "90%",
-        top: "52%",
+        // pulled into frame like Cody's corners (8% / 92%), so most of the
+        // pattern shows instead of bleeding off the edge
+        left: "92%",
+        top,
         width: SIZE,
         opacity: PEAK_OPACITY,
         maskImage: "radial-gradient(circle, black 0%, black 45%, transparent 78%)",

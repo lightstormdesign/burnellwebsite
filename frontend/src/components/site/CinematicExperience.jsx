@@ -366,7 +366,8 @@ const DesktopExperience = () => {
           className="absolute inset-0 z-[510]"
           style={{ opacity: portalTextOp, pointerEvents: pe(portalTextOp) }}
         >
-          <PortalFlower spin />
+          {/* lower than the phone's, so the desktop menu bar doesn't hide it */}
+          <PortalFlower spin top="18%" />
           {/* God rays: a slow-rotating light-beam wedge, screen-blended so it
               only ever brightens the footage beneath, never darkens it.
               Rotation isolated to an inner div (Tailwind's translate utility
