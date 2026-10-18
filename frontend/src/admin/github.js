@@ -2,8 +2,10 @@
 // signed-in person's own GitHub token (from /api/auth → /api/callback).
 // Publishing makes one commit with the page's JSON plus any new uploads, so
 // Vercel redeploys once per publish.
-export const REPO = "lightstormdesign/burnellwebsite";
-export const BRANCH = "main";
+import { SITE } from "./schema";
+
+export const REPO = SITE.repo;
+export const BRANCH = SITE.branch;
 export const CONTENT_DIR = "frontend/src/content";
 export const UPLOADS_DIR = "frontend/public/uploads";
 export const UPLOADS_PUBLIC = "/uploads";
@@ -40,7 +42,7 @@ async function gh(path, { method = "GET", body } = {}) {
     // (the repo is public) but saving is refused.
     if (/OAuth App access restrictions/i.test(message)) {
       message =
-        "GitHub is blocking this editor from saving. An owner of the lightstormdesign organization needs to approve it once: on github.com go to Settings → Applications → Authorized OAuth Apps → this editor → Grant (next to lightstormdesign). Then sign out here and sign in again.";
+        `GitHub is blocking this editor from saving. An owner of the ${REPO.split("/")[0]} organization needs to approve it once: on github.com go to Settings → Applications → Authorized OAuth Apps → this editor → Grant (next to ${REPO.split("/")[0]}). Then sign out here and sign in again.`;
     } else if (r.status === 401) {
       message = "Your sign-in expired. Sign out (top right) and sign in again.";
     }

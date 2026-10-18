@@ -1,3 +1,13 @@
+// This site's settings for the editor: which GitHub repo holds it, and
+// what to call it. Everything else in src/admin is the same on every
+// LightStorm site; only this file changes.
+export const SITE = {
+  name: "Burnell Washburn",
+  logo: "/burnell-logo.webp",
+  repo: "lightstormdesign/burnellwebsite",
+  branch: "main",
+};
+
 // What the site editor (/admin) lets you change: one entry per content file
 // in src/content/. Each field is a plain form control; nothing here is
 // required to be filled in unless marked `required`.

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Check, ChevronRight, ExternalLink, Github, Loader2, LogOut } from "lucide-react";
-import { PAGES } from "./schema";
+import { PAGES, SITE } from "./schema";
 import { Fields, UploadContext } from "./Fields";
 import { UPLOADS_PUBLIC, clearToken, getToken, prepareFile, prepareImage, publishPage, readPage, whoAmI } from "./github";
 
@@ -13,7 +13,7 @@ export default function AdminApp() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    document.title = "Site Editor · Burnell Washburn";
+    document.title = `Site Editor · ${SITE.name}`;
     if (!getToken()) return setMe(null);
     whoAmI().then(setMe, (e) => {
       if (e.status === 401) clearToken();
@@ -54,7 +54,7 @@ export default function AdminApp() {
 function SignIn({ error }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-      <img src="/burnell-logo.webp" alt="Burnell Washburn" className="w-64 max-w-full" />
+      <img src={SITE.logo} alt={SITE.name} className="w-64 max-w-full" />
       <p className="mt-6 font-display text-sm uppercase tracking-[0.35em] text-white/50">Site Editor</p>
       <a
         href="/api/auth"
@@ -76,7 +76,7 @@ function Shell({ me, onSignOut, children }) {
       <header className="sticky top-0 z-20 border-b border-white/5 bg-[#08090a]/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Link to="/admin" className="min-w-0 flex-1">
-            <img src="/burnell-logo.webp" alt="Burnell Washburn" className="h-7 w-auto" />
+            <img src={SITE.logo} alt={SITE.name} className="h-7 w-auto" />
           </Link>
           <a href="/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-white/60 hover:bg-white/5 hover:text-white">
             View site <ExternalLink size={14} />
