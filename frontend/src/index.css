@@ -342,7 +342,7 @@ body {
   animation: portal-flower-fade-in 3s ease-out both;
 }
 @keyframes portal-flower-breathe {
-  0%, 100% { opacity: 0.4; }
+  0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
 .portal-flower-breathe {

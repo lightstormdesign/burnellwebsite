@@ -3,8 +3,8 @@ import { useMemo } from "react";
 // One Flower of Life on the right side of the Portal screen, the same
 // 19-circle construction as Cody Shepherd's portal blooms (1 center + a
 // ring of 6 + a ring of 12, each circle's radius equal to its spacing),
-// generated so the geometry is exact. At its brightest it's 60% of Cody's
-// (0.26 → 0.156) and it breathes: slowly brightening and dimming.
+// generated so the geometry is exact. At its brightest it's 0.23 (Cody's
+// is 0.26) and it breathes: slowly brightening and dimming.
 //
 // Kept cheap for the phone portal: only opacity animates (the breath and
 // the one-time fade-in), on nested elements so they never fight. The glow
@@ -38,7 +38,7 @@ const Flower = ({ strokeWidth, className, style }) => {
   );
 };
 
-const PEAK_OPACITY = 0.156; // 60% of Cody's 0.26
+const PEAK_OPACITY = 0.23; // Cody's is 0.26
 const SIZE = "44vmax"; // same as Cody's
 
 export const PortalFlower = ({ spin = false }) => (
