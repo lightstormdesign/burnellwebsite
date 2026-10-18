@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnnouncementBubble } from "@/components/site/AnnouncementBubble";
+import { PortalFlower } from "@/components/site/PortalFlower";
 import { ChevronDown, Volume2, VolumeOff } from "lucide-react";
 import { useTilt } from "@/hooks/useTilt";
 import {
@@ -1260,6 +1261,7 @@ export const WorldHome = () => {
           {/* Everything fades in over the opening seconds: the shading,
               then the logo out of a soft blur, then Tap to Enter opening up
               (which also buys the transition time to load) */}
+          <PortalFlower />
           <div aria-hidden className="animate-cine-shade absolute inset-x-0 top-0 h-[34%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
           <div aria-hidden className="animate-cine-shade absolute inset-x-0 bottom-0 h-[24%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)" }} />
           <div className="relative mt-[12svh] flex w-full flex-col items-center">

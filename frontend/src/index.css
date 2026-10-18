@@ -331,6 +331,30 @@ body {
   }
 }
 
+/* Portal Flower of Life (PortalFlower.jsx): a one-time fade-in, then a
+   slow breath, on separate nested elements so they don't fight over
+   opacity. The element's own opacity sets the peak; these scale it. */
+@keyframes portal-flower-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.portal-flower-fade-in {
+  animation: portal-flower-fade-in 3s ease-out both;
+}
+@keyframes portal-flower-breathe {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+.portal-flower-breathe {
+  animation: portal-flower-breathe 7s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-flower-fade-in,
+  .portal-flower-breathe {
+    animation: none !important;
+  }
+}
+
 /* Portal-fx intensity — CinematicExperience.jsx publishes
    --portal-fx-intensity on <html> as the Home page's scroll progress moves
    through the second half of the Portal->Hero transition: 1 through the

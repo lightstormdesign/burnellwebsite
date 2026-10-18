@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { HeroContent } from "./HeroContent";
 import { WorldHome } from "./WorldHome";
 import { StardustMist } from "./StardustMist";
+import { PortalFlower } from "./PortalFlower";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { makeGlowSprite } from "@/utils/glowSprite";
 import { HOME_MEDIA, ARTIST_NAME, LOGO } from "@/data/site";
@@ -365,6 +366,7 @@ const DesktopExperience = () => {
           className="absolute inset-0 z-[510]"
           style={{ opacity: portalTextOp, pointerEvents: pe(portalTextOp) }}
         >
+          <PortalFlower spin />
           {/* God rays: a slow-rotating light-beam wedge, screen-blended so it
               only ever brightens the footage beneath, never darkens it.
               Rotation isolated to an inner div (Tailwind's translate utility
