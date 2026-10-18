@@ -35,7 +35,16 @@ async function gh(path, { method = "GET", body } = {}) {
   });
   const data = r.status === 204 ? null : await r.json().catch(() => null);
   if (!r.ok) {
-    const err = new Error((data && data.message) || `GitHub error ${r.status}`);
+    let message = (data && data.message) || `GitHub error ${r.status}`;
+    // The organization hasn't approved this sign-in app yet: reading works
+    // (the repo is public) but saving is refused.
+    if (/OAuth App access restrictions/i.test(message)) {
+      message =
+        "GitHub is blocking this editor from saving. An owner of the lightstormdesign organization needs to approve it once: on github.com go to Settings → Applications → Authorized OAuth Apps → this editor → Grant (next to lightstormdesign). Then sign out here and sign in again.";
+    } else if (r.status === 401) {
+      message = "Your sign-in expired. Sign out (top right) and sign in again.";
+    }
+    const err = new Error(message);
     err.status = r.status;
     throw err;
   }
