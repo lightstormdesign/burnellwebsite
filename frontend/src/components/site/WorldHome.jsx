@@ -284,7 +284,7 @@ const CreatureBody = ({ c, load }) => (
 
 // A creature with `clip` lives inside a window (in its layer's coordinates)
 // and is only seen within it: the fish below the water's surface is hidden.
-const Creature = ({ c, load, refFn }) =>
+export const Creature = ({ c, load, refFn }) =>
   c.clip ? (
     <div ref={refFn} className="creature overflow-hidden" style={{ opacity: 0 }}>
       <div className="creature-inner absolute left-0 top-0" style={{ transformOrigin: "0 0" }}>
@@ -396,7 +396,7 @@ const Chapter = ({ s, load }) => {
 // the bass of the song (--beat): a brighter, blurred copy of the B and a
 // second halo, both following --beat. (Both variables are set on the
 // landing only, so updating them every frame never restyles the whole page.)
-const Emblem3D = () => (
+export const Emblem3D = () => (
   <div className="relative" style={{ perspective: "700px" }}>
     <div
       aria-hidden
