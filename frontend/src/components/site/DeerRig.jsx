@@ -3,9 +3,9 @@ import { useEffect, useRef } from "react";
 // The deer in Burnell's world, alive. The body, tail and the original
 // side-on head are cut from the illustration, each sitting exactly where it
 // was. Scrolling tilts that head up and down (scroll back and it tilts
-// back): the scroller is in control. Tapping the deer plays the three other
+// back): the scroller is in control. Tapping the deer plays the two other
 // heads (drawn in the same style): it turns to three-quarter, looks right
-// at you, then turns back, bows its head and returns to side-on. Only the
+// at you, then turns back to side-on. Only the
 // ear flicks and the tail swish run on their own (CSS), with a faint golden
 // outline and an aura (rainbow glow, sacred geometry, rings) behind it.
 // Stands in for the deer layer's <img>: the world positions and sizes it
@@ -15,14 +15,13 @@ const P = (k) => `/burnell-world-deer-${k}.webp`;
 // The extra heads, placed in the 300x430 deer's own frame:
 // [left %, top %, width %] (they can reach past its edges).
 const HEADS = [
-  { key: "down", look: -1, box: [37.01, 4.314, 66.65] },
   { key: "side", look: 0 },
   { key: "three", look: 1, box: [33.28, 1.871, 64.17] },
   { key: "front", look: 2, box: [42.395, 4.171, 75.02] },
 ];
 // The tap: which head shows over time (s), as a "look" value matching the
 // heads above; in between two heads they cross-fade.
-const TAP_LOOK = [[0, 0], [0.35, 1], [0.7, 2], [2.3, 2], [2.65, 1], [3.0, 0], [3.4, -1], [4.0, -1], [4.4, 0]];
+const TAP_LOOK = [[0, 0], [0.35, 1], [0.7, 2], [2.3, 2], [2.65, 1], [3.0, 0]];
 // The scroll: the side head's tilt, in degrees (negative lifts the muzzle).
 const TILT_MID = -2;
 const TILT_SWING = 10;
@@ -62,7 +61,7 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
       const pad = Math.max(30, r.width * 0.4);
       if (x > r.left - pad && x < r.right + pad && y > r.top - pad && y < r.bottom + pad) {
         const now = performance.now();
-        if (now - tapAt > 4400) tapAt = now; // a tap mid-turn lets it finish
+        if (now - tapAt > 3000) tapAt = now; // a tap mid-turn lets it finish
       }
     };
     const onDown = (e) => hit(e.clientX, e.clientY);
