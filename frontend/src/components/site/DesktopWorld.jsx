@@ -812,6 +812,20 @@ export const DesktopWorld = () => {
         tabIndex={-1}
       />
 
+      {/* The portal's shading, carried over the transition's start and eased
+          off, so the tap doesn't suddenly brighten everything */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-[33]"
+        style={{
+          opacity: inWorld || (phase === "transition" && transitionPlaying) ? 0 : 1,
+          transition: inWorld ? "opacity 0.6s ease" : "opacity 1.4s ease 0.3s",
+        }}
+      >
+        <div className="absolute inset-x-0 top-0 h-[30%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
+        <div className="absolute inset-x-0 bottom-0 h-[30%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }} />
+      </div>
+
       {/* Portal: Burnell's loop, and the way in on the right.
           Clicking anywhere enters too. Stays up until the transition's first
           frame is actually playing underneath it. */}
@@ -822,7 +836,7 @@ export const DesktopWorld = () => {
         style={{
           opacity: phase === "portal" || (phase === "transition" && !transitionPlaying) ? 1 : 0,
           // a short dissolve into the whip: the loop is mid-drift when they tap
-          transition: inWorld ? "opacity 0.7s ease" : "opacity 0.3s ease",
+          transition: inWorld ? "opacity 0.7s ease" : "opacity 0.5s ease",
           pointerEvents: phase === "portal" ? "auto" : "none",
           visibility: phase === "portal" || (phase === "transition" && !transitionPlaying) ? "visible" : "hidden",
         }}
