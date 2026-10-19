@@ -904,7 +904,7 @@ html.intro-playing [data-testid="site-navbar"] { opacity: 0; }
   mix-blend-mode: screen;
   animation: deer-antler-glow 4s ease-in-out infinite;
 }
-@keyframes deer-antler-glow { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.85; } }
+@keyframes deer-antler-glow { 0%, 100% { opacity: 0.29; } 50% { opacity: 0.55; } }
 /* motes of light rising off the antler tips, each trailing a faint line */
 .deer-mote {
   position: absolute; width: 1.4%; aspect-ratio: 1; border-radius: 50%;
