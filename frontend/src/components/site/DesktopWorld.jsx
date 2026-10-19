@@ -11,7 +11,6 @@ import {
   DESKTOP_WORLD_LAYERS as LAYERS,
   HERO_BIO,
   HERO_TAGLINE,
-  HOME_MEDIA,
   LOGO,
   MOBILE_HOME_MEDIA,
   SITE_GENRE_TAGS,
@@ -46,6 +45,16 @@ const TILT_EASE = 0.06; // the mouse is jumpier than a phone's tilt: glide more
 const ENTER_LOCK_MS = 1100; // after entering, the wheel waits until the portal has gone
 const WARM_DELAY_MS = 700;
 const STORY_HASH = "#story";
+// The portal: the canyon plate and Burnell cut out of it, so he stands in
+// front of the canyon and the two slide apart a little with the mouse. At
+// rest they rebuild the original 16:9 photo (the transition's first frame).
+// The cutout's box is in the 2560x1441 photo's pixels.
+const PORTAL = {
+  plate: "/burnell-portal-desktop-plate.webp",
+  burnell: "/burnell-portal-desktop-burnell.webp",
+  box: { left: 888 / 2560, top: 246 / 1441, width: 731 / 2560 },
+};
+const PORTAL_SHIFT = { plate: [14, 8], burnell: [-22, -10] }; // px at the edge of the screen
 const BEAT_MAP = "/burnell-beautiful-beat.bin?v=8";
 const BEAT_FPS = 30;
 
@@ -288,6 +297,8 @@ export const DesktopWorld = () => {
   const beatMapRef = useRef(null);
   const phaseRef = useRef("portal");
   const mouse = useRef({ x: 0, y: 0 });
+  const portalPlateRef = useRef(null);
+  const portalBurnellRef = useRef(null);
   const layersLoaded = useRef(0);
   const pendingStoryRef = useRef(false);
 
@@ -435,6 +446,8 @@ export const DesktopWorld = () => {
     let tx = 0;
     let ty = 0;
     let beat = 0;
+    let mx = 0;
+    let my = 0;
     let fit = null;
     const placed = {};
     const t0 = performance.now();
@@ -515,6 +528,15 @@ export const DesktopWorld = () => {
             el.style.transform = `translateY(${((q - (i + 1)) * -30).toFixed(1)}px)`;
           });
         }
+      }
+
+      // portal parallax: the canyon drifts with the mouse, Burnell against it
+      if (phaseRef.current === "portal" && !reduceMotion) {
+        mx += (mouse.current.x - mx) * TILT_EASE;
+        my += (mouse.current.y - my) * TILT_EASE;
+        const shift = (el, [sx, sy]) => el && (el.style.transform = `translate3d(${(mx * sx).toFixed(1)}px, ${(my * sy).toFixed(1)}px, 0)`);
+        shift(portalPlateRef.current, PORTAL_SHIFT.plate);
+        shift(portalBurnellRef.current, PORTAL_SHIFT.burnell);
       }
 
       const live = phaseRef.current === "world";
@@ -664,20 +686,34 @@ export const DesktopWorld = () => {
           visibility: inWorld && !locked ? "hidden" : "visible",
         }}
       >
-        <img src={HOME_MEDIA.portalImage} alt="" className="animate-kenburns absolute inset-0 h-full w-full object-cover" />
+        {/* the 16:9 photo, cover-fit and drawn slightly larger so the parallax never shows an edge */}
+        <div
+          className="absolute left-1/2 top-1/2"
+          style={{ width: "max(100vw, 177.78vh)", height: "max(100vh, 56.25vw)", transform: "translate(-50%, -50%) scale(1.04)" }}
+        >
+          <img ref={portalPlateRef} src={PORTAL.plate} alt="" className="absolute inset-0 h-full w-full" />
+          <img
+            ref={portalBurnellRef}
+            src={PORTAL.burnell}
+            alt={ARTIST_NAME}
+            className="absolute"
+            style={{ left: `${PORTAL.box.left * 100}%`, top: `${PORTAL.box.top * 100}%`, width: `${PORTAL.box.width * 100}%` }}
+          />
+        </div>
         <PortalFlower spin top="18%" />
         <div aria-hidden className="absolute inset-x-0 top-0 h-[45%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.55), transparent)" }} />
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-[30%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)" }} />
-        <img src={LOGO} alt={ARTIST_NAME} className="animate-cine-logo gold-glow absolute left-1/2 top-[13%] w-[min(44rem,70vw)] -translate-x-1/2" />
-        <span className="absolute inset-x-0 bottom-14 flex flex-col items-center text-[var(--sm-gold-light)]">
-          <span className="flex items-center gap-4" style={{ animation: "breathe 3.2s ease-in-out infinite" }}>
+        {/* the wordmark and the cue sit in the open sky on the right, where he's looking */}
+        <div className="absolute top-[12%] flex w-[min(36rem,40vw)] -translate-x-1/2 flex-col items-center text-[var(--sm-gold-light)]" style={{ left: "75%" }}>
+          <img src={LOGO} alt={ARTIST_NAME} className="animate-cine-logo gold-glow w-full" />
+          <span className="mt-7 flex items-center gap-4" style={{ animation: "breathe 3.2s ease-in-out infinite" }}>
             <span aria-hidden className="h-px w-8 bg-gradient-to-r from-transparent to-[var(--sm-gold)]" />
             <span className="animate-cine-tap font-cinzel text-sm uppercase tracking-[0.42em] text-legible" style={{ marginRight: "-0.42em" }}>
               Click to Enter
             </span>
             <span aria-hidden className="h-px w-8 bg-gradient-to-l from-transparent to-[var(--sm-gold)]" />
           </span>
-        </span>
+        </div>
       </button>
 
       <audio ref={songRef} src={MOBILE_HOME_MEDIA.song} preload={warm ? "auto" : "none"} loop />
