@@ -117,7 +117,7 @@ export const HOME_MEDIA = {
 // Bumped whenever the videos or the song are re-encoded: these keep their
 // file names and phones cache them, so without it a phone can keep playing
 // an old encode.
-const MEDIA_V = "?v=10";
+const MEDIA_V = "?v=11";
 
 export const MOBILE_HOME_MEDIA = {
   portalIntro: `/burnell-portal-intro-mobile.mp4${MEDIA_V}`,
