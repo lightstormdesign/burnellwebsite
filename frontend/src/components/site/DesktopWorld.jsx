@@ -1099,6 +1099,7 @@ export const DesktopWorld = () => {
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className="intro-logo relative w-[min(46rem,62vw)]">
               <img src={LOGO} alt={ARTIST_NAME} className="intro-logo-img block w-full" />
+              <img src={LOGO} alt="" aria-hidden className="intro-logo-bright absolute inset-0 block w-full" style={{ filter: "brightness(1.6) drop-shadow(0 0 18px rgba(255, 214, 140, 0.8))" }} />
               <div
                 aria-hidden
                 className="intro-glint absolute inset-0"
