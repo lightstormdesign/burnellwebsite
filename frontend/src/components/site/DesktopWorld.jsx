@@ -49,7 +49,7 @@ const TILT_EASE = 0.06; // the mouse is jumpier than a phone's tilt: glide more
 const ENTER_LOCK_MS = 900; // after landing, the wheel waits a moment (no momentum carry-over)
 // Whip pan to the leaf, then the drop falls into the world. Its first frame
 // is the portal photo; its last is the world's landing.
-const TRANSITION = "/burnell-transition-desktop.mp4?v=1";
+const TRANSITION = "/burnell-transition-desktop.mp4?v=2";
 const TRANSITION_FAILSAFE_MS = 14000;
 const LANDING_EARLY_S = 1.3; // the B starts rising this long before the video ends
 const WARM_DELAY_MS = 700;
