@@ -121,9 +121,11 @@ const MEDIA_V = "?v=10";
 
 export const MOBILE_HOME_MEDIA = {
   portalIntro: `/burnell-portal-intro-mobile.mp4${MEDIA_V}`,
-  portalIntroPoster: "/burnell-portal-intro-mobile.webp",
+  // the fallback before the intro plays is the loop's first frame, the
+  // picture the portal settles on, so nothing visibly shifts
+  portalIntroPoster: "/burnell-portal-loop-mobile.webp?v=2",
   portalLoop: `/burnell-portal-loop-mobile.mp4${MEDIA_V}`,
-  portalLoopPoster: "/burnell-portal-loop-mobile.webp",
+  portalLoopPoster: "/burnell-portal-loop-mobile.webp?v=2",
   transition: `/burnell-transition-mobile.mp4${MEDIA_V}`,
   // "Beautiful", started by the Tap to Enter (half volume)
   song: `/burnell-beautiful.m4a${MEDIA_V}`,
