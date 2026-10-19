@@ -792,3 +792,7 @@ html.no-scrollbar::-webkit-scrollbar { display: none; }
   .world-progress-drop::after { animation: none; opacity: 0; }
 }
 
+/* desktop portal's lens flare (DesktopWorld.jsx): the sun breathing */
+@keyframes lens-flare-breathe { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+.lens-flare-breathe { animation: lens-flare-breathe 6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .lens-flare-breathe { animation: none; } }
