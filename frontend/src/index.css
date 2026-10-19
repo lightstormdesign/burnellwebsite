@@ -838,28 +838,28 @@ html.intro-playing [data-testid="site-navbar"] { opacity: 0; }
 .deer-head { transform-origin: 77.3% 34.9%; animation: deer-look 6s ease-in-out infinite; }
 @keyframes deer-look {
   0%, 100% { transform: rotate(0deg); }
-  20% { transform: rotate(-7deg) translateY(1.2%); }
-  32% { transform: rotate(-7deg) translateY(1.2%); }
-  55% { transform: rotate(5deg) translateY(-0.8%); }
-  68% { transform: rotate(5deg) translateY(-0.8%); }
-  85% { transform: rotate(-1.5deg); }
+  20% { transform: rotate(-14deg) translateY(2.2%); }
+  32% { transform: rotate(-14deg) translateY(2.2%); }
+  55% { transform: rotate(9deg) translateY(-1.4%); }
+  68% { transform: rotate(9deg) translateY(-1.4%); }
+  85% { transform: rotate(-3deg); }
 }
 .deer-ear { transform-origin: 69.3% 27%; animation: deer-ear 3.6s ease-in-out infinite; }
 @keyframes deer-ear {
   0%, 40%, 56%, 100% { transform: rotate(0deg); }
-  44% { transform: rotate(24deg); }
-  48% { transform: rotate(-8deg); }
-  52% { transform: rotate(16deg); }
+  44% { transform: rotate(40deg); }
+  48% { transform: rotate(-12deg); }
+  52% { transform: rotate(28deg); }
 }
 .deer-tail { transform-origin: 17.3% 54%; animation: deer-tail 5s ease-in-out infinite; }
 @keyframes deer-tail {
   0%, 30%, 50%, 100% { transform: rotate(0deg); }
-  34% { transform: rotate(16deg); }
-  39% { transform: rotate(-12deg); }
-  44% { transform: rotate(10deg); }
+  34% { transform: rotate(28deg); }
+  39% { transform: rotate(-20deg); }
+  44% { transform: rotate(16deg); }
 }
 .deer-body { transform-origin: 50% 100%; animation: deer-breathe 3.2s ease-in-out infinite; }
-@keyframes deer-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.012); } }
+@keyframes deer-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.022); } }
 @media (prefers-reduced-motion: reduce) {
   .deer-head, .deer-ear, .deer-tail, .deer-body { animation: none; }
 }
