@@ -191,23 +191,14 @@ export default function EPK() {
           column renders first (order-1) for the same reason; the gallery
           reads left-to-right as intended only at the lg breakpoint. */}
       <div className="relative mx-auto grid max-w-6xl grid-cols-1 gap-10 px-6 pb-32 lg:grid-cols-[1fr_1.15fr] lg:items-start lg:gap-14">
-        {/* Thin gold divider between the gallery and info column, styled
-            like a subtle spotlight beam (angled, tapering at both ends) —
-            desktop only, where the two-column layout actually applies. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 z-10 hidden w-px lg:block"
-          style={{
-            left: "44.5%",
-            transform: "rotate(4deg)",
-            background: "linear-gradient(to bottom, transparent 0%, rgba(214,179,101,0.32) 20%, rgba(214,179,101,0.32) 80%, transparent 100%)",
-          }}
-        />
-        <Reveal className="order-2 lg:order-1" delay={0.2}>
+        {/* The gallery stays in view (sticky) while the longer info column
+            scrolls past it on computers. Photos load normally: Safari never
+            loads lazy images inside a multi-column layout. */}
+        <Reveal className="order-2 lg:sticky lg:top-24 lg:order-1" delay={0.2}>
           <div className="columns-3 gap-2 sm:columns-4 lg:columns-3">
             {EPK_GALLERY.map((src) => (
               <div key={src} className="mb-2 break-inside-avoid overflow-hidden rounded-lg border border-white/10 bg-black/40">
-                <img src={src} alt={ARTIST_NAME} className="w-full object-cover" loading="lazy" />
+                <img src={src} alt={ARTIST_NAME} className="block w-full object-cover" decoding="async" />
               </div>
             ))}
           </div>

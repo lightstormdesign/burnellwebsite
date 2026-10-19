@@ -65,6 +65,21 @@ const PORTAL_POSTER = "/burnell-portal-loop-desktop.webp?v=3";
 // look through (perspective), while the flare's ghosts slide across it.
 const PORTAL_TILT_DEG = [1.6, 1.1];
 const FLARE_SHIFT = [-60, -34]; // px at the screen's edge
+// Birds every 12s: the loop plays once (they're gone by 4.6s), the photo
+// fades in over it, and the loop starts again at 12s. The photo is the
+// loop's own frame at full quality, so nothing visibly changes but the birds.
+const PORTAL_STILL = "/burnell-portal-desktop-still.webp";
+const BIRDS_GONE_S = 4.6;
+const BIRD_CYCLE_S = 12;
+// The sky's colour and the flare are kept off Burnell: this mask is clear
+// over him (a little wider, feathered) and solid everywhere else.
+const NOT_BURNELL = {
+  WebkitMaskImage: 'url("/burnell-portal-desktop-mask.png")',
+  maskImage: 'url("/burnell-portal-desktop-mask.png")',
+  WebkitMaskSize: "100% 100%",
+  maskSize: "100% 100%",
+};
+const FRAME_BOX = { width: "max(100vw, 177.78vh)", height: "max(100vh, 56.25vw)" };
 // golden-hour colour over the sky (soft light, so it tints, never paints)
 const SKY_TINT =
   "radial-gradient(ellipse 50% 55% at 90% 0%, rgba(255,190,110,0.95), transparent 70%), linear-gradient(to bottom, rgba(140,110,255,0.9) 0%, rgba(255,150,110,0.85) 16%, rgba(255,190,130,0.45) 30%, transparent 44%)";
@@ -326,6 +341,8 @@ export const DesktopWorld = () => {
   const phaseRef = useRef("portal");
   const mouse = useRef({ x: 0, y: 0 });
   const portalLoopRef = useRef(null);
+  const [stillOn, setStillOn] = useState(false);
+  const songMutedRef = useRef(false); // they turned the music off themselves
   const portalShiftRefs = useRef({});
   const layersLoaded = useRef(0);
   const pendingStoryRef = useRef(false);
@@ -398,6 +415,9 @@ export const DesktopWorld = () => {
     if (a) window.scrollTo(0, a.offsetTop);
   };
 
+  // "Beautiful". Browsers only allow sound after a click, tap or key, so if
+  // they came in by scrolling and it's refused, it starts on their first
+  // click or key instead (unless they've muted it).
   const startSong = () => {
     const el = songRef.current;
     if (!el) return;
@@ -406,23 +426,55 @@ export const DesktopWorld = () => {
         songOnRef.current = true;
         setSongOn(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        const retry = () => {
+          window.removeEventListener("pointerdown", retry, true);
+          window.removeEventListener("keydown", retry, true);
+          if (!songMutedRef.current && !songOnRef.current) startSong();
+        };
+        window.addEventListener("pointerdown", retry, true);
+        window.addEventListener("keydown", retry, true);
+      });
   };
   const toggleSong = () => {
     const el = songRef.current;
     if (!el) return;
     if (songOn) {
+      songMutedRef.current = true;
       el.pause();
       songOnRef.current = false;
       setSongOn(false);
     } else {
+      songMutedRef.current = false;
       startSong();
     }
   };
 
+  // The birds' 12-second cycle on the portal.
+  useEffect(() => {
+    const v = portalLoopRef.current;
+    if (phase !== "portal" || !v) return;
+    let t = 0;
+    const onTime = () => v.currentTime >= BIRDS_GONE_S && setStillOn(true);
+    const onEnded = () => {
+      t = setTimeout(() => {
+        v.currentTime = 0;
+        v.play()
+          .then(() => setStillOn(false))
+          .catch(() => {});
+      }, Math.max(0, BIRD_CYCLE_S - (v.duration || 6)) * 1000);
+    };
+    v.addEventListener("timeupdate", onTime);
+    v.addEventListener("ended", onEnded);
+    return () => {
+      clearTimeout(t);
+      v.removeEventListener("timeupdate", onTime);
+      v.removeEventListener("ended", onEnded);
+    };
+  }, [phase]);
+
   // Enter: play the transition (or go straight to the world when motion is
-  // reduced, or for About's #story link). Muted video may always play; the
-  // song needs the click, so only a click or a key starts it.
+  // reduced, or for About's #story link), and start the song.
   const enter = (withSong, skipVideo = false, at = null) => {
     if (phaseRef.current !== "portal") return;
     if (at && !reduceMotion) burst(at.clientX, at.clientY);
@@ -524,8 +576,8 @@ export const DesktopWorld = () => {
   // Scrolling down (or Space / arrow down / Enter) on the portal enters too.
   useEffect(() => {
     if (phase !== "portal") return;
-    const onWheel = (e) => e.deltaY > 0 && enter(false);
-    const onKey = (e) => ["ArrowDown", "PageDown", " ", "Enter"].includes(e.key) && enter(e.key === "Enter" || e.key === " ");
+    const onWheel = (e) => e.deltaY > 0 && enter(true);
+    const onKey = (e) => ["ArrowDown", "PageDown", " ", "Enter"].includes(e.key) && enter(true);
     window.addEventListener("wheel", onWheel, { passive: true });
     window.addEventListener("keydown", onKey);
     return () => {
@@ -851,15 +903,20 @@ export const DesktopWorld = () => {
       </div>
 
       {/* The sky's colour, carried over the transition's start like the
-          shading (its own layer: a blend inside a faded group does nothing) */}
+          shading and eased off slowly through the whip, still kept off
+          Burnell (its own layer, drawn at the frame's size so the mask
+          lines up: a blend inside a faded group does nothing) */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 z-[33]"
+        className="pointer-events-none fixed left-1/2 top-1/2 z-[33]"
         style={{
+          ...FRAME_BOX,
+          ...NOT_BURNELL,
+          transform: `translate(-50%, -50%) scale(${OVERSCAN})`,
           background: `${SKY_GLOW}, ${SKY_TINT}`,
           mixBlendMode: "soft-light",
           opacity: inWorld || (phase === "transition" && transitionPlaying) ? 0 : 1,
-          transition: inWorld ? "opacity 0.6s ease" : "opacity 1.4s ease 0.3s",
+          transition: inWorld ? "opacity 0.6s ease" : "opacity 2.4s ease 0.2s",
         }}
       />
 
@@ -879,12 +936,13 @@ export const DesktopWorld = () => {
         }}
       >
         {/* the frame, drawn at the same size as the transition and the world
-            so the handoff lines up: the loop, then the sky's colour */}
+            so the handoff lines up: the loop (with the still between bird
+            passes), the sky's colour and the flare; it all tilts together */}
         <div
           className="absolute left-1/2 top-1/2"
-          style={{ width: "max(100vw, 177.78vh)", height: "max(100vh, 56.25vw)", transform: `translate(-50%, -50%) scale(${OVERSCAN})` }}
+          style={{ ...FRAME_BOX, transform: `translate(-50%, -50%) scale(${OVERSCAN})` }}
         >
-          <div ref={(el) => (portalShiftRefs.current.loop = el)} className="absolute inset-0">
+          <div ref={(el) => (portalShiftRefs.current.loop = el)} className="absolute inset-0 overflow-hidden">
             <video
               ref={portalLoopRef}
               data-testid="desktop-portal-loop"
@@ -892,36 +950,43 @@ export const DesktopWorld = () => {
               src={PORTAL_LOOP}
               poster={PORTAL_POSTER}
               muted
-              loop
               autoPlay
               playsInline
               preload="auto"
               tabIndex={-1}
             />
-          </div>
-          <div aria-hidden className="absolute inset-0" style={{ background: SKY_TINT, mixBlendMode: "soft-light" }} />
-          <div aria-hidden className="absolute inset-0" style={{ background: SKY_GLOW }} />
-        </div>
-        {/* lens flare from the sun, top right, where he's looking: a soft
-            bloom, a streak, and ghosts that slide across with the mouse */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden" style={{ mixBlendMode: "screen" }}>
-          <div className="lens-flare-breathe absolute" style={{ left: "88%", top: "4%" }}>
-            <div className="absolute h-[60vmax] w-[60vmax] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: "radial-gradient(circle, rgba(255,240,200,0.85) 0%, rgba(255,205,135,0.4) 14%, rgba(255,170,100,0.12) 36%, transparent 62%)" }} />
-            <div className="absolute h-[4px] w-[110vw] -translate-x-1/2 -translate-y-1/2" style={{ background: "linear-gradient(90deg, transparent, rgba(255,226,170,0.35) 35%, rgba(255,245,220,0.6) 50%, rgba(255,226,170,0.35) 65%, transparent)", filter: "blur(1.5px)" }} />
-          </div>
-          <div ref={(el) => (portalShiftRefs.current.flare = el)} className="absolute inset-0">
-            {[
-              [70, 20, 90, 0.16, "rgba(255,210,150,0.9)"],
-              [60, 31, 46, 0.2, "rgba(170,210,255,0.9)"],
-              [46, 50, 140, 0.08, "rgba(255,190,140,0.9)"],
-              [36, 64, 30, 0.22, "rgba(200,170,255,0.9)"],
-            ].map(([x, y, d, o, c], i) => (
-              <div
-                key={i}
-                className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
-                style={{ left: `${x}%`, top: `${y}%`, width: d, height: d, opacity: o, background: `radial-gradient(circle, transparent 38%, ${c} 70%, transparent 72%)` }}
-              />
-            ))}
+            <img
+              src={PORTAL_STILL}
+              alt=""
+              aria-hidden
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ opacity: stillOn ? 1 : 0, transition: stillOn ? "opacity 0.9s ease" : "opacity 0.6s ease" }}
+            />
+            <div aria-hidden className="absolute inset-0" style={{ ...NOT_BURNELL, background: SKY_TINT, mixBlendMode: "soft-light" }} />
+            <div aria-hidden className="absolute inset-0" style={{ ...NOT_BURNELL, background: SKY_GLOW }} />
+            {/* lens flare from the sun, top right, where he's looking: a soft
+                bloom, a streak, and ghosts that slide across with the mouse,
+                all behind him, never over him */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden" style={{ ...NOT_BURNELL, mixBlendMode: "screen" }}>
+              <div className="lens-flare-breathe absolute" style={{ left: "88%", top: "4%" }}>
+                <div className="absolute h-[60vmax] w-[60vmax] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: "radial-gradient(circle, rgba(255,240,200,0.85) 0%, rgba(255,205,135,0.4) 14%, rgba(255,170,100,0.12) 36%, transparent 62%)" }} />
+                <div className="absolute h-[4px] w-[110vw] -translate-x-1/2 -translate-y-1/2" style={{ background: "linear-gradient(90deg, transparent, rgba(255,226,170,0.35) 35%, rgba(255,245,220,0.6) 50%, rgba(255,226,170,0.35) 65%, transparent)", filter: "blur(1.5px)" }} />
+              </div>
+              <div ref={(el) => (portalShiftRefs.current.flare = el)} className="absolute inset-0">
+                {[
+                  [70, 20, 90, 0.16, "rgba(255,210,150,0.9)"],
+                  [60, 31, 46, 0.2, "rgba(170,210,255,0.9)"],
+                  [46, 50, 140, 0.08, "rgba(255,190,140,0.9)"],
+                  [36, 64, 30, 0.22, "rgba(200,170,255,0.9)"],
+                ].map(([x, y, d, o, c], i) => (
+                  <div
+                    key={i}
+                    className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
+                    style={{ left: `${x}%`, top: `${y}%`, width: d, height: d, opacity: o, background: `radial-gradient(circle, transparent 38%, ${c} 70%, transparent 72%)` }}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
         <PortalFlower spin top="18%" />
