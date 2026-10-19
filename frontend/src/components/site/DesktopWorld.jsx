@@ -11,14 +11,15 @@ import {
   DESKTOP_WORLD_LAYERS as LAYERS,
   HERO_BIO,
   HERO_TAGLINE,
-  LOGO,
   MOBILE_HOME_MEDIA,
   SITE_GENRE_TAGS,
 } from "@/data/site";
 
 // Desktop Home: the same world as the phone's (WorldHome.jsx), painted
-// 16:9. Portal -> click (or scroll) to enter -> the landing over the
-// blurred sky (the B, the tagline, the bio) -> scrolling descends into the
+// 16:9. Portal -> Tap Here to Enter (or scroll) -> the transition (whip
+// pan to the aspen leaf, the drop falls, the camera dives into the world
+// inside it) -> the landing over the blurred sky (the B, the tagline, the
+// bio), starting exactly where the video ends -> scrolling descends into the
 // world, each layer rising at its own pace -> Burnell's story, chapter by
 // chapter, while the world keeps drifting toward you.
 //
@@ -37,12 +38,20 @@ const CHAPTER_VH = 100; // scroll distance per story chapter
 const SCROLL_EASE = 5; // how quickly the world catches up to the wheel (per second)
 const STORY_ZOOM = 0.45; // how much the nearest layer grows over the whole story
 const STORY_DIM = 0.55; // how dark the world gets behind the chapters
-const OVERSCAN = 1.06; // drawn a little larger than the screen, so the parallax never shows an edge
+// Drawn a little larger than the screen, so the parallax never shows an edge.
+// The portal and the transition video are drawn at the same size, so every
+// handoff lines up.
+const OVERSCAN = 1.04;
 const ZOOM_CENTER = [CANVAS.width / 2, CANVAS.height / 2];
 const TILT_X = 95; // canvas px of sideways shift at full parallax, nearest layer
 const TILT_Y = 50;
 const TILT_EASE = 0.06; // the mouse is jumpier than a phone's tilt: glide more
-const ENTER_LOCK_MS = 1100; // after entering, the wheel waits until the portal has gone
+const ENTER_LOCK_MS = 900; // after landing, the wheel waits a moment (no momentum carry-over)
+// Whip pan to the leaf, then the drop falls into the world. Its first frame
+// is the portal photo; its last is the world's landing.
+const TRANSITION = "/burnell-transition-desktop.mp4?v=1";
+const TRANSITION_FAILSAFE_MS = 14000;
+const LANDING_EARLY_S = 1.3; // the B starts rising this long before the video ends
 const WARM_DELAY_MS = 700;
 const STORY_HASH = "#story";
 // The portal: the canyon plate and Burnell cut out of it, so he stands in
@@ -283,6 +292,10 @@ export const DesktopWorld = () => {
   const [layersReady, setLayersReady] = useState(false);
   const [songOn, setSongOn] = useState(false);
   const [locked, setLocked] = useState(false); // no scrolling for a moment after entering
+  const [transitionPlaying, setTransitionPlaying] = useState(false);
+  const [landingEarly, setLandingEarly] = useState(false);
+  const videoRef = useRef(null);
+  const failsafeRef = useRef(null);
 
   const stageRef = useRef(null);
   const layerRefs = useRef([]);
@@ -391,12 +404,26 @@ export const DesktopWorld = () => {
     }
   };
 
-  const enter = (withSong) => {
+  // Enter: play the transition (or go straight to the world when motion is
+  // reduced, or for About's #story link). Muted video may always play; the
+  // song needs the click, so only a click or a key starts it.
+  const enter = (withSong, skipVideo = false) => {
     if (phaseRef.current !== "portal") return;
-    phaseRef.current = "world";
     setWarm(true);
     if (withSong) startSong();
     window.scrollTo(0, 0);
+    const v = videoRef.current;
+    if (skipVideo || reduceMotion || !v) return startWorld();
+    phaseRef.current = "transition";
+    setPhase("transition");
+    v.play().catch(startWorld);
+    failsafeRef.current = setTimeout(startWorld, TRANSITION_FAILSAFE_MS);
+  };
+
+  const startWorld = () => {
+    if (phaseRef.current === "world") return;
+    clearTimeout(failsafeRef.current);
+    phaseRef.current = "world";
     setLocked(true);
     setPhase("world");
     setTimeout(() => {
@@ -410,7 +437,7 @@ export const DesktopWorld = () => {
 
   // Scrolling down (or Space / arrow down / Enter) on the portal enters too.
   useEffect(() => {
-    if (inWorld) return;
+    if (phase !== "portal") return;
     const onWheel = (e) => e.deltaY > 0 && enter(false);
     const onKey = (e) => ["ArrowDown", "PageDown", " ", "Enter"].includes(e.key) && enter(e.key === "Enter" || e.key === " ");
     window.addEventListener("wheel", onWheel, { passive: true });
@@ -419,7 +446,7 @@ export const DesktopWorld = () => {
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKey);
     };
-  }, [inWorld]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // About in the menu (/#story): straight into the world, down to the first chapter.
   useEffect(() => {
@@ -428,11 +455,17 @@ export const DesktopWorld = () => {
     if (phaseRef.current === "world") scrollToStory();
     else {
       pendingStoryRef.current = true;
-      enter(false);
+      enter(false, true);
     }
   }, [location.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => () => songRef.current?.pause(), []);
+  useEffect(
+    () => () => {
+      songRef.current?.pause();
+      clearTimeout(failsafeRef.current);
+    },
+    []
+  );
 
   // The world, every frame: ease toward the real scroll position, place each
   // layer between its landing and landed position, grow it through the
@@ -585,7 +618,7 @@ export const DesktopWorld = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const snap = { position: "absolute", left: 0, height: 1, width: 1 };
-  const showLanding = inWorld;
+  const showLanding = inWorld || landingEarly;
 
   return (
     <div data-testid="desktop-world" className="relative">
@@ -670,26 +703,51 @@ export const DesktopWorld = () => {
         ))}
       </div>
 
-      {/* Portal: click (or scroll) to enter. It opens up and dissolves into the world. */}
-      <button
-        type="button"
+      {/* The transition, over the world until it ends. It sits under the
+          landing, so the B can rise over its last moment, and fades out
+          (blurred and dimmed like the landing) once the layers are in. */}
+      <video
+        ref={videoRef}
+        data-testid="desktop-transition-video"
+        className="fixed inset-0 z-30 h-full w-full object-cover"
+        style={{
+          transform: `scale(${OVERSCAN})`,
+          opacity: phase === "portal" || (inWorld && layersReady) ? 0 : 1,
+          filter: inWorld ? "blur(6px) brightness(0.5)" : "none",
+          transition: inWorld ? "opacity 0.9s ease, filter 1.2s ease" : "none",
+          pointerEvents: "none",
+        }}
+        src={TRANSITION}
+        muted
+        playsInline
+        preload={warm ? "auto" : "none"}
+        onPlaying={() => setTransitionPlaying(true)}
+        onTimeUpdate={(e) => {
+          const v = e.currentTarget;
+          if (!landingEarly && v.duration && v.duration - v.currentTime <= LANDING_EARLY_S) setLandingEarly(true);
+        }}
+        onEnded={startWorld}
+        tabIndex={-1}
+      />
+
+      {/* Portal: Burnell in front of the canyon, and the way in on the right.
+          Clicking anywhere enters too. Stays up until the transition's first
+          frame is actually playing underneath it. */}
+      <div
         onClick={() => enter(true)}
         data-testid="desktop-portal"
-        aria-label="Click to enter"
-        className="fixed inset-0 z-40 block w-full overflow-hidden bg-black"
+        className="fixed inset-0 z-40 cursor-pointer overflow-hidden bg-black"
         style={{
-          opacity: inWorld ? 0 : 1,
-          transform: inWorld ? "scale(1.08)" : "none",
-          filter: inWorld ? "blur(8px)" : "none",
-          transition: "opacity 1.4s ease, transform 1.6s cubic-bezier(0.16,1,0.3,1), filter 1.4s ease",
-          pointerEvents: inWorld ? "none" : "auto",
-          visibility: inWorld && !locked ? "hidden" : "visible",
+          opacity: phase === "portal" || (phase === "transition" && !transitionPlaying) ? 1 : 0,
+          transition: inWorld ? "opacity 0.7s ease" : "opacity 0.15s linear",
+          pointerEvents: phase === "portal" ? "auto" : "none",
+          visibility: phase === "portal" || (phase === "transition" && !transitionPlaying) ? "visible" : "hidden",
         }}
       >
         {/* the 16:9 photo, cover-fit and drawn slightly larger so the parallax never shows an edge */}
         <div
           className="absolute left-1/2 top-1/2"
-          style={{ width: "max(100vw, 177.78vh)", height: "max(100vh, 56.25vw)", transform: "translate(-50%, -50%) scale(1.04)" }}
+          style={{ width: "max(100vw, 177.78vh)", height: "max(100vh, 56.25vw)", transform: `translate(-50%, -50%) scale(${OVERSCAN})` }}
         >
           <img ref={portalPlateRef} src={PORTAL.plate} alt="" className="absolute inset-0 h-full w-full" />
           <img
@@ -701,20 +759,43 @@ export const DesktopWorld = () => {
           />
         </div>
         <PortalFlower spin top="18%" />
-        <div aria-hidden className="absolute inset-x-0 top-0 h-[45%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.55), transparent)" }} />
-        <div aria-hidden className="absolute inset-x-0 bottom-0 h-[30%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)" }} />
-        {/* the wordmark and the cue sit in the open sky on the right, where he's looking */}
-        <div className="absolute top-[12%] flex w-[min(36rem,40vw)] -translate-x-1/2 flex-col items-center text-[var(--sm-gold-light)]" style={{ left: "75%" }}>
-          <img src={LOGO} alt={ARTIST_NAME} className="animate-cine-logo gold-glow w-full" />
-          <span className="mt-7 flex items-center gap-4" style={{ animation: "breathe 3.2s ease-in-out infinite" }}>
-            <span aria-hidden className="h-px w-8 bg-gradient-to-r from-transparent to-[var(--sm-gold)]" />
-            <span className="animate-cine-tap font-cinzel text-sm uppercase tracking-[0.42em] text-legible" style={{ marginRight: "-0.42em" }}>
-              Click to Enter
+        <div aria-hidden className="absolute inset-x-0 top-0 h-[30%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-[30%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }} />
+        {/* Tap Here to Enter: a glass ring with a gold water drop (the drop
+            the transition follows), rippling outward, on the right where
+            he's looking */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            enter(true);
+          }}
+          data-testid="desktop-enter"
+          className="animate-cine-tap group absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
+          style={{ left: "78%", top: "54%" }}
+        >
+          <span aria-hidden className="absolute left-1/2 top-1/2 -z-10 h-[190%] w-[230%] -translate-x-1/2 -translate-y-1/2" style={{ background: TEXT_POOL, filter: "blur(18px)" }} />
+          <span className="relative flex h-28 w-28 items-center justify-center">
+            <span aria-hidden className="enter-ripple absolute inset-0 rounded-full border border-[var(--sm-gold)]" />
+            <span aria-hidden className="enter-ripple absolute inset-0 rounded-full border border-[var(--sm-gold)]" style={{ animationDelay: "1.4s" }} />
+            <span className="relative flex h-full w-full items-center justify-center rounded-full border-[1.5px] border-[var(--sm-gold-light)]/85 bg-black/35 shadow-[0_0_50px_rgba(214,179,101,0.5),inset_0_0_24px_rgba(214,179,101,0.25)] backdrop-blur-md transition duration-500 group-hover:scale-105 group-hover:bg-black/15 group-hover:shadow-[0_0_70px_rgba(214,179,101,0.6)]">
+              <svg viewBox="0 0 24 24" className="h-12 w-12 drop-shadow-[0_0_10px_rgba(243,223,176,0.7)]" style={{ animation: "breathe 3.2s ease-in-out infinite" }} aria-hidden>
+                <defs>
+                  <linearGradient id="enter-drop" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stopColor="#f3dfb0" />
+                    <stop offset="1" stopColor="#c9a24f" />
+                  </linearGradient>
+                </defs>
+                <path d="M12 2.6C12 2.6 5.6 9.9 5.6 14.4a6.4 6.4 0 0 0 12.8 0C18.4 9.9 12 2.6 12 2.6z" fill="url(#enter-drop)" fillOpacity="0.35" stroke="url(#enter-drop)" strokeWidth="1.2" />
+                <path d="M9.2 14.6a2.9 2.9 0 0 0 2.4 2.8" fill="none" stroke="#fff7e2" strokeOpacity="0.8" strokeWidth="1" strokeLinecap="round" />
+              </svg>
             </span>
-            <span aria-hidden className="h-px w-8 bg-gradient-to-l from-transparent to-[var(--sm-gold)]" />
           </span>
-        </div>
-      </button>
+          <span className="font-cinzel mt-7 text-base uppercase tracking-[0.42em] text-[#f3dfb0] text-legible" style={{ marginRight: "-0.42em" }}>
+            Tap Here to Enter
+          </span>
+        </button>
+      </div>
 
       <audio ref={songRef} src={MOBILE_HOME_MEDIA.song} preload={warm ? "auto" : "none"} loop />
       <button
