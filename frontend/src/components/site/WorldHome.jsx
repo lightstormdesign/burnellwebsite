@@ -42,8 +42,8 @@ import {
 // the layer they live in, so they move with it); the layers shift with the
 // phone's tilt; and the B's glow follows the bass of the song.
 //
-// About in the menu (/#story) skips straight here and glides down to the
-// first chapter: the story lives on the Home page now.
+// About in the menu (/#story) skips straight here, to the landing with the
+// B: the story lives on the Home page now, a scroll below it.
 //
 // The world layers are mounted from the start, underneath everything, so
 // they've loaded by the time the video ends and the handoff is just the
@@ -848,12 +848,9 @@ export const WorldHome = () => {
     }
   };
 
-  // About (menu) -> the first chapter. The scroll engine eases the world
-  // down to it, so it glides through the descent rather than jumping.
-  const scrollToStory = () => {
-    const a = anchorRefs.current[2];
-    if (a) window.scrollTo(0, a.offsetTop);
-  };
+  // About (menu) lands on the B, at the top of the world, from where the
+  // story is a scroll away.
+  const scrollToStory = () => window.scrollTo(0, 0);
 
   useEffect(() => {
     if (location.hash !== STORY_HASH) return;

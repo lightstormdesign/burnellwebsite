@@ -692,7 +692,13 @@ export const DesktopWorld = () => {
           tx += (-mouse.current.x - tx) * TILT_EASE;
           ty += (-mouse.current.y - ty) * TILT_EASE;
         }
-        const key = `${W}|${H}|${ys.toFixed(1)}|${target}|${tx.toFixed(3)}|${ty.toFixed(3)}`;
+        // The mouse parallax eases in as the descent begins: at the landing
+        // the layers sit exactly where the transition's last frame left them
+        // (the mouse is usually off to the right, on Tap Here to Enter).
+        const tw = smooth(clamp01(ys / D / 0.12));
+        const etx = tx * tw;
+        const ety = ty * tw;
+        const key = `${W}|${H}|${ys.toFixed(1)}|${target}|${etx.toFixed(3)}|${ety.toFixed(3)}`;
         if (key !== lastKey) {
           const sizeChanged = !lastKey.startsWith(`${W}|${H}|`);
           landingRef.current?.style.setProperty("--tilt-x", (-tx).toFixed(3));
@@ -702,7 +708,7 @@ export const DesktopWorld = () => {
           const ox = (W - CANVAS.width * k) / 2;
           const oy = (H - CANVAS.height * k) / 2;
           const p = clamp01(ys / D);
-          fit = { k, ox, oy, p };
+          fit = { k, ox, oy, p, tw };
           if (sizeChanged)
             CREATURES.forEach((c, i) => {
               const el = creatureRefs.current[i];
@@ -724,8 +730,8 @@ export const DesktopWorld = () => {
             const y = L.start[1] + (L.end[1] - L.start[1]) * t;
             const g = 1; // no story zoom: the world holds still once landed
             const [ax, ay] = L.anchor || ZOOM_CENTER;
-            const gx = ax + (x - ax) * g + tx * (L.depth - 0.3) * TILT_X;
-            const gy = ay + (y - ay) * g + ty * Math.max(0, L.depth - 0.1) * TILT_Y;
+            const gx = ax + (x - ax) * g + etx * (L.depth - 0.3) * TILT_X;
+            const gy = ay + (y - ay) * g + ety * Math.max(0, L.depth - 0.1) * TILT_Y;
             placed[L.key] = { gx, gy, g };
             el.style.transform = `translate3d(${(ox + gx * k).toFixed(1)}px, ${(oy + gy * k).toFixed(1)}px, 0) scale(${g.toFixed(4)})`;
           });
@@ -769,7 +775,7 @@ export const DesktopWorld = () => {
         CREATURES.forEach((c, i) => {
           const el = creatureRefs.current[i];
           const at =
-            c.space === "free" ? { gx: tx * TILT_X * CLOUD_TILT * c.depth, gy: ty * TILT_Y * CLOUD_TILT * c.depth, g: 1 } : placed[c.layer];
+            c.space === "free" ? { gx: tx * fit.tw * TILT_X * CLOUD_TILT * c.depth, gy: ty * fit.tw * TILT_Y * CLOUD_TILT * c.depth, g: 1 } : placed[c.layer];
           if (!el || !at) return;
           const pose = c.pose(t, fit.p);
           if (!pose) {
