@@ -834,13 +834,8 @@ html.intro-playing [data-testid="site-navbar"] { opacity: 0; }
   will-change: background-position;
 }
 
-/* ---- The deer (DeerRig.jsx): pivots measured on the 300x430 original ---- */
-.deer-head { transform-origin: 77.3% 34.9%; animation: deer-look 7s ease-in-out infinite; }
-@keyframes deer-look {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-4deg) translateY(0.6%); }
-  60% { transform: rotate(3deg) translateY(-0.4%); }
-}
+/* ---- The deer (DeerRig.jsx): the ear and tail move on their own; the
+   head only turns with the scroll. Pivots measured on the 300x430 original ---- */
 .deer-ear { transform-origin: 69.3% 27%; animation: deer-ear 3.6s ease-in-out infinite; }
 @keyframes deer-ear {
   0%, 40%, 56%, 100% { transform: rotate(0deg); }
@@ -855,9 +850,7 @@ html.intro-playing [data-testid="site-navbar"] { opacity: 0; }
   39% { transform: rotate(-20deg); }
   44% { transform: rotate(16deg); }
 }
-.deer-body { transform-origin: 50% 100%; animation: deer-breathe 3.2s ease-in-out infinite; }
-@keyframes deer-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.022); } }
 @media (prefers-reduced-motion: reduce) {
-  .deer-head, .deer-ear, .deer-tail, .deer-body { animation: none; }
+  .deer-ear, .deer-tail { animation: none; }
 }
 

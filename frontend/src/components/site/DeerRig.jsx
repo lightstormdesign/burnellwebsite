@@ -5,7 +5,8 @@ import { useEffect, useRef } from "react";
 // was; three more heads (drawn in the same style) turn it: three-quarter,
 // facing you, and head down. Scrolling turns the head through those angles
 // (scroll back and it turns back), and tapping it makes it look at you.
-// Ear flicks, a tail swish and breathing run on their own (CSS).
+// Only the ear flicks and the tail swish run on their own (CSS); the head
+// is entirely the scroller's (and the tap's).
 // Stands in for the deer layer's <img>: the world positions and sizes it
 // the same way (the ref gets the layer's width and transform).
 const P = (k) => `/burnell-world-deer-${k}.webp`;
@@ -35,18 +36,21 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
     let tapUntil = 0;
     let raf = 0;
 
-    // A tap anywhere over the deer (the story's layers sit above the world,
-    // so this listens on the page and checks the deer's box).
-    const onDown = (e) => {
+    // A tap anywhere on or near the deer (the story's layers sit above the
+    // world, so this listens on the page and checks the deer's box, with a
+    // generous margin: it's small on a phone). Touch and pointer both, as
+    // iPhone doesn't always send a pointer event for a tap on a scrolling page.
+    const hit = (x, y) => {
       const el = rootRef.current;
       if (!el) return;
       const r = el.getBoundingClientRect();
-      const pad = r.width * 0.15;
-      if (e.clientX > r.left - pad && e.clientX < r.right + pad && e.clientY > r.top - pad && e.clientY < r.bottom + pad) {
-        tapUntil = performance.now() + TAP_LOOK_MS;
-      }
+      const pad = Math.max(30, r.width * 0.4);
+      if (x > r.left - pad && x < r.right + pad && y > r.top - pad && y < r.bottom + pad) tapUntil = performance.now() + TAP_LOOK_MS;
     };
+    const onDown = (e) => hit(e.clientX, e.clientY);
+    const onTouch = (e) => e.touches[0] && hit(e.touches[0].clientX, e.touches[0].clientY);
     window.addEventListener("pointerdown", onDown, { passive: true, capture: true });
+    window.addEventListener("touchstart", onTouch, { passive: true, capture: true });
 
     const frame = (now) => {
       // where the scroll says to look: a gentle sweep from head-down through
@@ -70,6 +74,7 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("pointerdown", onDown, { capture: true });
+      window.removeEventListener("touchstart", onTouch, { capture: true });
     };
   }, []);
 
