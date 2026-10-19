@@ -635,11 +635,13 @@ body {
   }
 }
 
-/* WorldHome: the landing once it has faded out on scroll */
+/* WorldHome / DesktopWorld: the landing once it has faded out on scroll
+   (not drawn at all, so its blurred pieces cost nothing over the world) */
 .is-gone,
 .is-gone * {
   pointer-events: none !important;
 }
+.is-gone { visibility: hidden !important; }
 
 /* ---- Mobile Home portal: cinematic fade-in (WorldHome.jsx) ---- */
 @keyframes cine-in {
@@ -797,36 +799,36 @@ html.no-scrollbar::-webkit-scrollbar { display: none; }
 .lens-flare-breathe { animation: lens-flare-breathe 6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .lens-flare-breathe { animation: none; } }
 
-/* ---- Desktop Home intro (DesktopWorld.jsx): the wordmark rises with a
-   gold glint and a golden ripple, then glides into the menu bar ---- */
+/* ---- Desktop Home intro (DesktopWorld.jsx): his wordmark fades up, a
+   gold glint runs across it like light over polished metal, it fades away;
+   1.5s, then the menu bar fades in ---- */
 html.intro-playing [data-testid="site-navbar"] { opacity: 0; }
-html.intro-flying [data-nav-logo] { opacity: 0; }
 [data-testid="site-navbar"] { transition: opacity 0.9s ease; }
-@keyframes intro-logo-in {
-  from { opacity: 0; transform: scale(0.92); filter: blur(10px); }
-  to { opacity: 1; transform: scale(1); filter: blur(0); }
+@keyframes intro-logo {
+  0% { opacity: 0; transform: scale(0.965); filter: blur(8px); }
+  28% { opacity: 1; transform: scale(1); filter: blur(0); }
+  72% { opacity: 1; transform: scale(1.01); filter: blur(0); }
+  100% { opacity: 0; transform: scale(1.03); filter: blur(6px); }
 }
-.intro-logo > img { animation: intro-logo-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.intro-logo { animation: intro-logo 1.5s cubic-bezier(0.4, 0, 0.2, 1) both; }
+/* the gold warms a touch as the light passes */
+@keyframes intro-logo-shine {
+  0%, 30% { filter: drop-shadow(0 0 6px rgba(214, 179, 101, 0.35)); }
+  55% { filter: drop-shadow(0 0 16px rgba(255, 214, 140, 0.6)); }
+  80%, 100% { filter: drop-shadow(0 0 8px rgba(214, 179, 101, 0.4)); }
+}
+.intro-logo-img { animation: intro-logo-shine 1.5s ease both; }
+/* the glint: one narrow streak of white-gold light, angled like light on
+   polished metal, with a faint warm halo, crossing left to right */
 @keyframes intro-glint {
-  from { background-position: 160% 0; }
-  to { background-position: -60% 0; }
+  from { background-position: 110% 0, 110% 0; }
+  to { background-position: -10% 0, -10% 0; }
 }
 .intro-glint {
-  background: linear-gradient(105deg, transparent 38%, rgba(255, 246, 214, 0.95) 48%, rgba(255, 220, 140, 0.9) 52%, transparent 62%);
-  background-size: 250% 100%;
+  background-image:
+    linear-gradient(115deg, transparent 47%, rgba(255, 255, 250, 1) 49.6%, rgba(255, 255, 250, 1) 50.4%, transparent 53%),
+    linear-gradient(115deg, transparent 42%, rgba(255, 222, 150, 0.45) 50%, transparent 58%);
+  background-size: 500% 100%, 500% 100%;
   background-repeat: no-repeat;
-  mix-blend-mode: screen;
-  animation: intro-glint 1.3s cubic-bezier(0.45, 0, 0.25, 1) 0.6s both;
+  animation: intro-glint 0.7s cubic-bezier(0.45, 0, 0.35, 1) 0.45s both;
 }
-@keyframes intro-ripple {
-  from { transform: translate(-50%, -50%) scale(0.1); opacity: 0.85; }
-  to { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-}
-.intro-ripple {
-  position: absolute; left: 0; top: 0; width: 120vmax; height: 120vmax; border-radius: 50%;
-  border: 1.5px solid rgba(243, 223, 176, 0.75);
-  box-shadow: 0 0 24px rgba(214, 179, 101, 0.45), inset 0 0 24px rgba(214, 179, 101, 0.3);
-  opacity: 0;
-  animation: intro-ripple 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) both;
-}
-

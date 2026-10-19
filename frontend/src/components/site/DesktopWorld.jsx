@@ -81,11 +81,10 @@ const NOT_BURNELL = {
   WebkitMaskSize: "100% 100%",
   maskSize: "100% 100%",
 };
-// The intro, once per visit to Home: the loop blurred, his wordmark large in
-// the centre with a gold glint and a golden ripple, then it glides up into
-// its place in the menu bar and the portal fades in around it.
-const INTRO_HOLD_MS = 2200;
-const INTRO_FLY_MS = 1000;
+// The intro, once per visit to Home: over the blurred loop, his wordmark
+// fades up large in the centre, a gold glint runs across it, and it fades
+// away as the portal and the menu bar fade in. 1.5s in all.
+const INTRO_MS = 1500;
 const FRAME_BOX = { width: "max(100vw, 177.78vh)", height: "max(100vh, 56.25vw)" };
 // golden-hour colour over the sky (soft light, so it tints, never paints)
 const SKY_TINT =
@@ -271,7 +270,7 @@ const Chapter = ({ s, i, load }) => {
   if (s.invitation) {
     return (
       <div className="relative flex flex-col items-center px-8 text-center">
-        <div aria-hidden className="absolute left-1/2 top-1/2 -z-10 h-[160%] w-[150%] -translate-x-1/2 -translate-y-1/2" style={{ background: TEXT_POOL, filter: "blur(18px)" }} />
+        <div aria-hidden className="absolute left-1/2 top-1/2 -z-10 h-[180%] w-[170%] -translate-x-1/2 -translate-y-1/2" style={{ background: TEXT_POOL }} />
         <img src="/burnell-emblem.png" alt="" aria-hidden className="h-20 w-auto opacity-90" />
         <h2 className="font-display mt-8 text-5xl leading-tight text-white text-legible">
           If you feel it, <span className="text-gold-grad">you’re already soul fam.</span>
@@ -306,7 +305,7 @@ const Chapter = ({ s, i, load }) => {
         className="max-h-[62vh] w-auto max-w-[44%] select-none rounded-2xl border border-[var(--sm-gold)]/30 object-contain shadow-[0_30px_90px_rgba(0,0,0,0.65)]"
       />
       <div className="relative min-w-0 flex-1 text-left">
-        <div aria-hidden className="absolute -inset-x-14 -inset-y-16 -z-10" style={{ background: TEXT_POOL, filter: "blur(16px)" }} />
+        <div aria-hidden className="absolute -inset-x-20 -inset-y-20 -z-10" style={{ background: TEXT_POOL }} />
         {s.kicker && <span className="font-accent text-[0.68rem] uppercase tracking-[0.4em] text-[var(--sm-gold)]">{s.kicker}</span>}
         {s.title && <h2 className="font-display mt-3 text-5xl leading-tight text-white text-legible">{s.title}</h2>}
         <div className="mt-5 max-w-xl space-y-4">
@@ -331,9 +330,8 @@ export const DesktopWorld = () => {
   const [crossfade, setCrossfade] = useState(false); // portal fading into the transition's first frame
   const [intro, setIntro] = useState(() =>
     typeof window !== "undefined" && !window.location.hash && !window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "logo" : "done"
-  ); // logo | fly | done
+  ); // logo | done
   const introRef = useRef(intro);
-  const introLogoRef = useRef(null);
   const [landingEarly, setLandingEarly] = useState(false);
   const videoRef = useRef(null);
   const failsafeRef = useRef(null);
@@ -527,35 +525,19 @@ export const DesktopWorld = () => {
     failsafeRef.current = setTimeout(startWorld, TRANSITION_FAILSAFE_MS + CROSSFADE_MS + 1500);
   };
 
-  // The intro: hold the wordmark, then fly it to the menu bar's logo.
+  // The intro: the wordmark, then the portal.
   const finishIntro = () => {
     introRef.current = "done";
     setIntro("done");
   };
   useEffect(() => {
     introRef.current = intro;
-    const root = document.documentElement;
-    root.classList.toggle("intro-playing", intro === "logo");
-    root.classList.toggle("intro-flying", intro === "fly");
-    if (intro === "logo") {
-      const t = setTimeout(() => setIntro("fly"), INTRO_HOLD_MS);
-      return () => clearTimeout(t);
-    }
-    if (intro === "fly") {
-      const el = introLogoRef.current;
-      const target = document.querySelector("[data-nav-logo]");
-      if (el && target) {
-        const a = el.getBoundingClientRect();
-        const b = target.getBoundingClientRect();
-        const dx = b.left + b.width / 2 - (a.left + a.width / 2);
-        const dy = b.top + b.height / 2 - (a.top + a.height / 2);
-        el.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(${(b.width / a.width).toFixed(4)})`;
-      }
-      const t = setTimeout(() => setIntro("done"), INTRO_FLY_MS);
-      return () => clearTimeout(t);
-    }
+    document.documentElement.classList.toggle("intro-playing", intro === "logo");
+    if (intro !== "logo") return;
+    const t = setTimeout(finishIntro, INTRO_MS);
+    return () => clearTimeout(t);
   }, [intro]);
-  useEffect(() => () => document.documentElement.classList.remove("intro-playing", "intro-flying"), []);
+  useEffect(() => () => document.documentElement.classList.remove("intro-playing"), []);
 
   // Never let the transition sit frozen (what took so long to beat on the
   // phone): every 250ms, resume it if the browser paused it, and if its
@@ -918,7 +900,9 @@ export const DesktopWorld = () => {
           transform: `scale(${OVERSCAN})`,
           opacity: phase === "portal" || (inWorld && layersReady) ? 0 : 1,
           filter: inWorld ? "blur(6px) brightness(0.5)" : "none",
-          transition: inWorld ? "opacity 0.9s ease, filter 1.2s ease" : "none",
+          transition: inWorld ? "opacity 0.9s ease, filter 1.2s ease, visibility 0s linear 1.2s" : "none",
+          // gone from the page once faded, so it's never redrawn under the world
+          visibility: inWorld && layersReady ? "hidden" : "visible",
           pointerEvents: "none",
         }}
         src={TRANSITION}
@@ -950,6 +934,12 @@ export const DesktopWorld = () => {
         tabIndex={-1}
       />
 
+      {/* Over the transition's start only; gone once the world is up (a
+          blend layer left over the world, even invisible, makes the browser
+          recompute the whole screen every frame, which stuttered the
+          scroll on computers) */}
+      {!inWorld && (
+        <>
       {/* The portal's shading, carried over the transition's start and eased
           off, so the tap doesn't suddenly brighten everything */}
       <div
@@ -981,6 +971,8 @@ export const DesktopWorld = () => {
           transition: inWorld ? "opacity 0.6s ease" : "opacity 2.4s ease 0.2s",
         }}
       />
+        </>
+      )}
 
       {/* Portal: Burnell's loop, and the way in on the right.
           Clicking anywhere enters too. Stays up until the transition's first
@@ -1006,7 +998,7 @@ export const DesktopWorld = () => {
             ...FRAME_BOX,
             transform: `translate(-50%, -50%) scale(${OVERSCAN})`,
             filter: intro === "logo" ? "blur(14px) brightness(0.6)" : "none",
-            transition: "filter 1.6s ease",
+            transition: "filter 1.2s ease",
           }}
         >
           <div ref={(el) => (portalShiftRefs.current.loop = el)} className="absolute inset-0 overflow-hidden">
@@ -1057,7 +1049,7 @@ export const DesktopWorld = () => {
           </div>
         </div>
         {/* the portal itself, faded in cinematically once the intro's done */}
-        <div className="absolute inset-0" style={{ opacity: intro === "done" ? 1 : 0, transition: "opacity 1.2s ease 0.15s" }}>
+        <div className="absolute inset-0" style={{ opacity: intro === "done" ? 1 : 0, transition: "opacity 1s ease 0.1s" }}>
         <PortalFlower spin top="18%" />
         <div aria-hidden className="absolute inset-x-0 top-0 h-[30%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-[30%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }} />
@@ -1097,22 +1089,16 @@ export const DesktopWorld = () => {
         </button>
         </div>
 
-        {/* the intro: his wordmark with a gold glint, a golden ripple from
-            the centre, then it glides into the menu bar */}
-        {intro !== "done" && (
+        {/* the intro: his wordmark, a gold glint across it, gone */}
+        {intro === "logo" && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div aria-hidden className="absolute left-1/2 top-1/2" style={{ opacity: intro === "logo" ? 1 : 0, transition: "opacity 0.8s ease" }}>
-              {[0, 0.55, 1.1].map((d) => (
-                <span key={d} className="intro-ripple" style={{ animationDelay: `${d + 0.25}s` }} />
-              ))}
-            </div>
-            <div
-              ref={introLogoRef}
-              className="intro-logo relative w-[min(46rem,62vw)]"
-              style={{ transition: `transform ${INTRO_FLY_MS}ms cubic-bezier(0.65, 0, 0.25, 1)` }}
-            >
-              <img src={LOGO} alt={ARTIST_NAME} className="gold-glow block w-full" />
-              <div aria-hidden className="intro-glint absolute inset-0" style={{ WebkitMaskImage: `url("${LOGO}")`, maskImage: `url("${LOGO}")`, WebkitMaskSize: "100% 100%", maskSize: "100% 100%" }} />
+            <div className="intro-logo relative w-[min(46rem,62vw)]">
+              <img src={LOGO} alt={ARTIST_NAME} className="intro-logo-img block w-full" />
+              <div
+                aria-hidden
+                className="intro-glint absolute inset-0"
+                style={{ WebkitMaskImage: `url("${LOGO}")`, maskImage: `url("${LOGO}")`, WebkitMaskSize: "100% 100%", maskSize: "100% 100%" }}
+              />
             </div>
           </div>
         )}

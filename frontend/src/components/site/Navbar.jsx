@@ -57,7 +57,11 @@ export const Navbar = () => {
           ? `${fadeIn ? "animate-ui-in " : ""}fixed inset-x-0 top-0 z-50`
           : isMobile
             ? "fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black"
-            : "fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-xl"
+            : isHome
+              ? // over the moving world a backdrop blur is redrawn every frame
+                // (it made the scroll stutter): a plain dark bar instead
+                "fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/75"
+              : "fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-xl"
       }
     >
       {/* Portal/Hero: hamburger is right-aligned, matching the same
