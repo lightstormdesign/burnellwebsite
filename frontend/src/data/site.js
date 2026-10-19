@@ -154,7 +154,8 @@ export const WORLD_LAYERS = [
 // The same world for computers (DesktopWorld.jsx), painted 16:9 on a
 // 1672x941 canvas. Same keys, order and meaning as WORLD_LAYERS: `start` is
 // the landing (the sky alone, everything else waiting below the screen, the
-// trees just off each side), `end` is the landed world.
+// trees fully off each side), `end` is the landed world. The landing is
+// exactly the sky layer, which is also the desktop transition's end keyframe.
 const DW = (k) => `/burnell-world-desktop-${k}.webp`;
 export const DESKTOP_WORLD_CANVAS = { width: 1672, height: 941 };
 export const DESKTOP_WORLD_LAYERS = [
