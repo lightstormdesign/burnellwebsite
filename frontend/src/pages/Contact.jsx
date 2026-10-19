@@ -3,14 +3,18 @@ import { Footer } from "@/components/site/Footer";
 import { Reveal } from "@/components/site/Reveal";
 import { SITE_CONTACT, SOCIALS } from "@/data/site";
 
-// Burnell smiling, behind the contact details (darkened so they read).
+// Burnell smiling, behind the contact details (darkened so they read). On
+// computers it's zoomed in from the right, which puts him on the left, clear
+// of the centred text.
 export default function Contact() {
   return (
     <div className="relative min-h-screen bg-[var(--sm-black)]">
       <div
         className="fixed inset-0 z-0 overflow-hidden"
       >
-        <img src="/burnell-community.webp" alt="" aria-hidden className="animate-kenburns h-full w-full object-cover" />
+        <div className="h-full w-full md:origin-[100%_35%] md:scale-[1.45]">
+          <img src="/burnell-community.webp" alt="" aria-hidden className="animate-kenburns h-full w-full object-cover" />
+        </div>
         <div aria-hidden className="haze-drift" />
         <div className="absolute inset-0 bg-black/65" />
       </div>

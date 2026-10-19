@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
@@ -10,6 +11,42 @@ import { SOCIALS, LAYLO_URL, TEXT_LIST_LINK_PROPS, ARTIST_NAME, COMMUNITY_OFFERS
 // here). Stats/performance numbers live only on the EPK page, not here.
 export default function Community() {
   const isMobile = useIsMobile();
+  const photoRef = useRef(null);
+  const boxRef = useRef(null);
+  const cardsRef = useRef(null);
+
+  // Computers: size and place the crowd photo so Burnell's face (kneeling,
+  // brown hat) sits in the gap between the sign-up box and the offer cards,
+  // whatever the window's shape. The photo is 960x720; his face is at
+  // (615, 430) in it.
+  useEffect(() => {
+    if (isMobile) return;
+    const place = () => {
+      const img = photoRef.current;
+      const box = boxRef.current;
+      const cards = cardsRef.current;
+      if (!img || !box || !cards) return;
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      const target = (box.getBoundingClientRect().bottom + cards.getBoundingClientRect().top) / 2;
+      let k = Math.max(W / 960, H / 720);
+      // face lower than the photo allows: grow it until it reaches
+      if (430 * k < target) k = target / 430;
+      // face higher than the photo allows (its bottom would show): grow it from the bottom
+      if (H - 720 * k > target - 430 * k) k = Math.max(k, (H - target) / 290);
+      img.style.width = `${(960 * k).toFixed(0)}px`;
+      img.style.height = `${(720 * k).toFixed(0)}px`;
+      img.style.left = `${((W - 960 * k) / 2).toFixed(0)}px`;
+      img.style.top = `${Math.min(0, Math.max(H - 720 * k, target - 430 * k)).toFixed(0)}px`;
+    };
+    place();
+    const t = setTimeout(place, 1200); // once the cards have finished rising in
+    window.addEventListener("resize", place);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("resize", place);
+    };
+  }, [isMobile]);
   return (
     // flex column + min-h-screen: the standard "sticky footer" pattern —
     // <main> below gets flex-1, so it stretches to fill any leftover
@@ -31,7 +68,15 @@ export default function Community() {
         className={isMobile ? "fixed inset-x-0 top-0 z-0 overflow-hidden" : "fixed inset-0 z-0 overflow-hidden"}
         style={isMobile ? { height: "58vh" } : undefined}
       >
-        <img src="/burnell-community-crowd.webp" alt="" aria-hidden className="animate-kenburns h-full w-full object-cover" />
+        {/* on computers placed so Burnell's face shows between the sign-up
+            box and the offer cards (see above) */}
+        <img
+          ref={photoRef}
+          src="/burnell-community-crowd.webp"
+          alt=""
+          aria-hidden
+          className={isMobile ? "animate-kenburns h-full w-full object-cover" : "absolute max-w-none"}
+        />
         <div aria-hidden className="haze-drift" />
         <div className="absolute inset-0 bg-black/65" />
       </div>
@@ -76,6 +121,7 @@ export default function Community() {
             the very first frame with no delayed entrance, so it can't live
             behind a Reveal-gated fade-in either. */}
         <div
+          ref={boxRef}
           className={`animate-glow-pulse mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-6 rounded-xl border border-[var(--sm-gold)]/25 bg-black/45 px-8 py-4 backdrop-blur-sm ${
             isMobile ? "mt-6" : "mt-10"
           }`}
@@ -97,7 +143,7 @@ export default function Community() {
             beat packs), Quantum Visions. Cards without a link yet render as
             "coming soon". */}
         <Reveal delay={0.2}>
-          <div className={`grid grid-cols-1 gap-4 text-left sm:grid-cols-2 ${isMobile ? "mt-10" : "mt-14"}`}>
+          <div ref={cardsRef} className={`grid grid-cols-1 gap-4 text-left sm:grid-cols-2 ${isMobile ? "mt-10" : "mt-14"}`}>
             {COMMUNITY_OFFERS.map((o) => {
               const inner = (
                 <>

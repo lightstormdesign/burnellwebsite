@@ -38,7 +38,7 @@ const Flower = ({ strokeWidth, className, style }) => {
   );
 };
 
-const PEAK_OPACITY = 0.3; // Cody's is 0.26
+const PEAK_OPACITY = 0.4; // Cody's is 0.26
 const SIZE = "44vmax"; // same as Cody's
 
 export const PortalFlower = ({ spin = false, top = "8%" }) => (

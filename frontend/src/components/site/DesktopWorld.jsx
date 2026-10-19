@@ -12,6 +12,7 @@ import {
   DESKTOP_WORLD_LAYERS as LAYERS,
   HERO_BIO,
   HERO_TAGLINE,
+  LOGO,
   MOBILE_HOME_MEDIA,
   SITE_GENRE_TAGS,
 } from "@/data/site";
@@ -38,7 +39,7 @@ const DESCENT_VH = 200; // scroll distance of the descent into the world
 const CHAPTER_VH = 100; // scroll distance per story chapter
 const SCROLL_EASE = 5; // how quickly the world catches up to the wheel (per second)
 const STORY_ZOOM = 0.45; // how much the nearest layer grows over the whole story
-const STORY_DIM = 0.55; // how dark the world gets behind the chapters
+const STORY_DIM = 0.62; // how dark the world gets behind the chapters
 // Drawn a little larger than the screen, so the parallax never shows an edge.
 // The portal and the transition video are drawn at the same size, so every
 // handoff lines up.
@@ -52,6 +53,7 @@ const ENTER_LOCK_MS = 900; // after landing, the wheel waits a moment (no moment
 // is the portal photo; its last is the world's landing.
 const TRANSITION = "/burnell-transition-desktop.mp4?v=5";
 const TRANSITION_FAILSAFE_MS = 9000; // the video is 5s
+const CROSSFADE_MS = 1000; // the portal dissolving into the transition's first frame
 const STALL_MS = 1200; // its clock stuck this long: kick it once, then go on to the world
 const LANDING_EARLY_S = 1.3; // the B starts rising this long before the video ends
 const WARM_DELAY_MS = 700;
@@ -79,13 +81,18 @@ const NOT_BURNELL = {
   WebkitMaskSize: "100% 100%",
   maskSize: "100% 100%",
 };
+// The intro, once per visit to Home: the loop blurred, his wordmark large in
+// the centre with a gold glint and a golden ripple, then it glides up into
+// its place in the menu bar and the portal fades in around it.
+const INTRO_HOLD_MS = 2200;
+const INTRO_FLY_MS = 1000;
 const FRAME_BOX = { width: "max(100vw, 177.78vh)", height: "max(100vh, 56.25vw)" };
 // golden-hour colour over the sky (soft light, so it tints, never paints)
 const SKY_TINT =
-  "radial-gradient(ellipse 50% 55% at 90% 0%, rgba(255,190,110,0.95), transparent 70%), linear-gradient(to bottom, rgba(140,110,255,0.9) 0%, rgba(255,150,110,0.85) 16%, rgba(255,190,130,0.45) 30%, transparent 44%)";
-// and a little plain golden light in the sky itself (soft light alone barely
-// shows on the pale overcast)
-const SKY_GLOW = "radial-gradient(ellipse 55% 45% at 88% 2%, rgba(255,214,150,0.38), transparent 70%), linear-gradient(to bottom, rgba(205,170,255,0.16), transparent 30%)";
+  "radial-gradient(ellipse 42% 48% at 94% 0%, rgba(255,190,110,0.85), rgba(255,160,150,0.35) 45%, transparent 72%)";
+// and a little plain golden light in that corner (soft light alone barely
+// shows on the pale overcast); the rocks on the left are left alone
+const SKY_GLOW = "radial-gradient(ellipse 40% 40% at 92% 0%, rgba(255,214,150,0.3), transparent 70%)";
 // rings that spread from wherever they tap to enter, like the drop landing
 const ENTER_BURST = [
   { size: 260, ms: 1100, delay: 0 },
@@ -256,7 +263,6 @@ const CREATURES = [
 ];
 
 // fades fully out before the photo's edges, so no rectangle ever shows
-const FEATHER = "radial-gradient(closest-side, #000 50%, rgba(0,0,0,0.45) 78%, transparent 100%)";
 const TEXT_POOL = "radial-gradient(ellipse at center, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.38) 48%, transparent 75%)";
 
 const CHAPTERS = [...ABOUT_STAGES.filter((s) => s.media || s.bridge), { id: "home-invitation", invitation: true }];
@@ -292,11 +298,12 @@ const Chapter = ({ s, i, load }) => {
   // photo and words side by side, swapping sides chapter to chapter
   return (
     <div className={`flex w-full max-w-6xl items-center gap-14 px-16 pt-16 ${i % 2 ? "flex-row-reverse" : ""}`}>
+      {/* a framed print, not feathered into the painting (his dark photos
+          read as holes in the bright world that way) */}
       <img
         src={load ? s.media : undefined}
         alt=""
-        className="max-h-[66vh] w-auto max-w-[46%] select-none object-contain"
-        style={{ WebkitMaskImage: FEATHER, maskImage: FEATHER }}
+        className="max-h-[62vh] w-auto max-w-[44%] select-none rounded-2xl border border-[var(--sm-gold)]/30 object-contain shadow-[0_30px_90px_rgba(0,0,0,0.65)]"
       />
       <div className="relative min-w-0 flex-1 text-left">
         <div aria-hidden className="absolute -inset-x-14 -inset-y-16 -z-10" style={{ background: TEXT_POOL, filter: "blur(16px)" }} />
@@ -321,6 +328,12 @@ export const DesktopWorld = () => {
   const [songOn, setSongOn] = useState(false);
   const [locked, setLocked] = useState(false); // no scrolling for a moment after entering
   const [transitionPlaying, setTransitionPlaying] = useState(false);
+  const [crossfade, setCrossfade] = useState(false); // portal fading into the transition's first frame
+  const [intro, setIntro] = useState(() =>
+    typeof window !== "undefined" && !window.location.hash && !window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "logo" : "done"
+  ); // logo | fly | done
+  const introRef = useRef(intro);
+  const introLogoRef = useRef(null);
   const [landingEarly, setLandingEarly] = useState(false);
   const videoRef = useRef(null);
   const failsafeRef = useRef(null);
@@ -477,6 +490,8 @@ export const DesktopWorld = () => {
   // reduced, or for About's #story link), and start the song.
   const enter = (withSong, skipVideo = false, at = null) => {
     if (phaseRef.current !== "portal") return;
+    // during the intro, a tap or scroll just finishes it
+    if (introRef.current !== "done" && !skipVideo) return finishIntro();
     if (at && !reduceMotion) burst(at.clientX, at.clientY);
     setWarm(true);
     if (withSong) startSong();
@@ -485,15 +500,62 @@ export const DesktopWorld = () => {
     if (skipVideo || reduceMotion || !v) return startWorld();
     phaseRef.current = "transition";
     setPhase("transition");
-    v.play().catch(() => {
-      // the in-memory copy wouldn't play: try the network copy once
-      if (!v.src.startsWith("blob:")) return startWorld();
-      v.src = TRANSITION;
-      v.play().catch(startWorld);
-    });
-    watchStall(v);
-    failsafeRef.current = setTimeout(startWorld, TRANSITION_FAILSAFE_MS);
+    // The portal dissolves (1s) into the transition's first frame, held
+    // still underneath it, and then the transition plays.
+    let started = false;
+    const crossfadeThenPlay = () => {
+      if (started) return;
+      started = true;
+      setCrossfade(true);
+      setTimeout(() => {
+        if (phaseRef.current !== "transition") return;
+        v.play().catch(() => {
+          // the in-memory copy wouldn't play: try the network copy once
+          if (!v.src.startsWith("blob:")) return startWorld();
+          v.src = TRANSITION;
+          v.play().catch(startWorld);
+        });
+        watchStall(v);
+      }, CROSSFADE_MS);
+    };
+    if (v.readyState >= 2) crossfadeThenPlay();
+    else {
+      v.addEventListener("loadeddata", crossfadeThenPlay, { once: true });
+      v.load();
+      setTimeout(crossfadeThenPlay, 1500);
+    }
+    failsafeRef.current = setTimeout(startWorld, TRANSITION_FAILSAFE_MS + CROSSFADE_MS + 1500);
   };
+
+  // The intro: hold the wordmark, then fly it to the menu bar's logo.
+  const finishIntro = () => {
+    introRef.current = "done";
+    setIntro("done");
+  };
+  useEffect(() => {
+    introRef.current = intro;
+    const root = document.documentElement;
+    root.classList.toggle("intro-playing", intro === "logo");
+    root.classList.toggle("intro-flying", intro === "fly");
+    if (intro === "logo") {
+      const t = setTimeout(() => setIntro("fly"), INTRO_HOLD_MS);
+      return () => clearTimeout(t);
+    }
+    if (intro === "fly") {
+      const el = introLogoRef.current;
+      const target = document.querySelector("[data-nav-logo]");
+      if (el && target) {
+        const a = el.getBoundingClientRect();
+        const b = target.getBoundingClientRect();
+        const dx = b.left + b.width / 2 - (a.left + a.width / 2);
+        const dy = b.top + b.height / 2 - (a.top + a.height / 2);
+        el.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(${(b.width / a.width).toFixed(4)})`;
+      }
+      const t = setTimeout(() => setIntro("done"), INTRO_FLY_MS);
+      return () => clearTimeout(t);
+    }
+  }, [intro]);
+  useEffect(() => () => document.documentElement.classList.remove("intro-playing", "intro-flying"), []);
 
   // Never let the transition sit frozen (what took so long to beat on the
   // phone): every 250ms, resume it if the browser paused it, and if its
@@ -928,9 +990,9 @@ export const DesktopWorld = () => {
         data-testid="desktop-portal"
         className="fixed inset-0 z-40 cursor-pointer overflow-hidden bg-black"
         style={{
-          opacity: phase === "portal" || (phase === "transition" && !transitionPlaying) ? 1 : 0,
-          // a short dissolve into the whip: the loop is mid-drift when they tap
-          transition: inWorld ? "opacity 0.7s ease" : "opacity 0.5s ease",
+          opacity: phase === "portal" || (phase === "transition" && !crossfade) ? 1 : 0,
+          // a 1s dissolve into the transition's first frame (held still beneath)
+          transition: inWorld ? "opacity 0.7s ease" : `opacity ${CROSSFADE_MS}ms ease`,
           pointerEvents: phase === "portal" ? "auto" : "none",
           visibility: phase === "portal" || (phase === "transition" && !transitionPlaying) ? "visible" : "hidden",
         }}
@@ -940,7 +1002,12 @@ export const DesktopWorld = () => {
             passes), the sky's colour and the flare; it all tilts together */}
         <div
           className="absolute left-1/2 top-1/2"
-          style={{ ...FRAME_BOX, transform: `translate(-50%, -50%) scale(${OVERSCAN})` }}
+          style={{
+            ...FRAME_BOX,
+            transform: `translate(-50%, -50%) scale(${OVERSCAN})`,
+            filter: intro === "logo" ? "blur(14px) brightness(0.6)" : "none",
+            transition: "filter 1.6s ease",
+          }}
         >
           <div ref={(el) => (portalShiftRefs.current.loop = el)} className="absolute inset-0 overflow-hidden">
             <video
@@ -989,6 +1056,8 @@ export const DesktopWorld = () => {
             </div>
           </div>
         </div>
+        {/* the portal itself, faded in cinematically once the intro's done */}
+        <div className="absolute inset-0" style={{ opacity: intro === "done" ? 1 : 0, transition: "opacity 1.2s ease 0.15s" }}>
         <PortalFlower spin top="18%" />
         <div aria-hidden className="absolute inset-x-0 top-0 h-[30%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-[30%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }} />
@@ -1002,7 +1071,7 @@ export const DesktopWorld = () => {
             enter(true, false, e);
           }}
           data-testid="desktop-enter"
-          className="animate-cine-tap group absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
+          className="group absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
           style={{ left: "83%", top: "43%" }}
         >
           <span aria-hidden className="absolute left-1/2 top-1/2 -z-10 h-[190%] w-[230%] -translate-x-1/2 -translate-y-1/2" style={{ background: TEXT_POOL, filter: "blur(18px)" }} />
@@ -1026,6 +1095,27 @@ export const DesktopWorld = () => {
             Tap Here to Enter
           </span>
         </button>
+        </div>
+
+        {/* the intro: his wordmark with a gold glint, a golden ripple from
+            the centre, then it glides into the menu bar */}
+        {intro !== "done" && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div aria-hidden className="absolute left-1/2 top-1/2" style={{ opacity: intro === "logo" ? 1 : 0, transition: "opacity 0.8s ease" }}>
+              {[0, 0.55, 1.1].map((d) => (
+                <span key={d} className="intro-ripple" style={{ animationDelay: `${d + 0.25}s` }} />
+              ))}
+            </div>
+            <div
+              ref={introLogoRef}
+              className="intro-logo relative w-[min(46rem,62vw)]"
+              style={{ transition: `transform ${INTRO_FLY_MS}ms cubic-bezier(0.65, 0, 0.25, 1)` }}
+            >
+              <img src={LOGO} alt={ARTIST_NAME} className="gold-glow block w-full" />
+              <div aria-hidden className="intro-glint absolute inset-0" style={{ WebkitMaskImage: `url("${LOGO}")`, maskImage: `url("${LOGO}")`, WebkitMaskSize: "100% 100%", maskSize: "100% 100%" }} />
+            </div>
+          </div>
+        )}
       </div>
 
       <WorldProgress active={inWorld} />

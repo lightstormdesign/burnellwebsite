@@ -89,22 +89,23 @@ export const Navbar = () => {
                 alt={ARTIST_NAME}
                 className="animate-wordmark-float h-9 w-auto object-contain"
               />
-            ) : isHome ? (
-              // Desktop homepage only: her original plain-text wordmark (no
-              // symbol), per Round 3 — everywhere else keeps the symbol+text
-              // logo image. Untouched by the mobile treatment above.
-              <span className="font-display text-xl uppercase tracking-[0.15em] text-[var(--sm-gold-light)]">
-                {ARTIST_NAME}
-              </span>
             ) : (
-              <img src={LOGO} alt={ARTIST_NAME} className="h-10 w-auto object-contain" />
+              // his logo (on Home it's where the intro's wordmark lands)
+              <img src={LOGO} alt={ARTIST_NAME} data-nav-logo className="h-10 w-auto object-contain" />
             )}
           </Link>
         )}
         {!isPortalHero && (
           <div className="hidden items-center gap-5 md:flex">
             {NAV_LINKS.map((l) => (
-              <NavLink key={l.label} to={l.to} label={l.label} active={location.pathname === l.to} testId={`nav-link-${l.label.toLowerCase()}`} />
+              <NavLink
+                key={l.label}
+                // the story lives on Home: About goes straight to it
+                to={l.to === "/about" ? "/#story" : l.to}
+                label={l.label}
+                active={location.pathname === l.to}
+                testId={`nav-link-${l.label.toLowerCase()}`}
+              />
             ))}
           </div>
         )}

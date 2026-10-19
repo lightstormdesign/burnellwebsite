@@ -83,7 +83,7 @@ const FlowerCluster = ({ opacity, strokeWidth, animated }) => (
 // layers as the mobile Home, at their landed positions) hiding faintly in
 // the dark. Pages with a photo background keep the ripples, since a
 // painting over a photo of him would clash.
-const WORLD_REVEAL_ROUTES = ["/tour", "/epk", "/only-hueman"];
+const WORLD_REVEAL_ROUTES = ["/tour", "/music", "/epk", "/only-hueman"];
 
 const WorldReveal = () => (
   <div aria-hidden className="world-reveal pointer-events-none fixed inset-0 z-[1] hidden overflow-hidden md:block">
