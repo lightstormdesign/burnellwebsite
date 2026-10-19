@@ -1255,6 +1255,12 @@ export const WorldHome = () => {
           onEnded={handleIntroEnded}
           tabIndex={-1}
         />
+        {/* The shading stays put until the portal itself hands over (it used
+            to fade with the logo below, which uncovered the loop's bright sky
+            for a moment on tap; the transition's first frames carry the same
+            shading) */}
+        <div aria-hidden className="animate-cine-shade absolute inset-x-0 top-0 h-[34%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
+        <div aria-hidden className="animate-cine-shade absolute inset-x-0 bottom-0 h-[24%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)" }} />
         <div
           className="absolute inset-0 flex flex-col items-center"
           style={{ opacity: phase === "portal" ? 1 : 0, transition: "opacity 0.3s ease" }}
@@ -1263,8 +1269,6 @@ export const WorldHome = () => {
               then the logo out of a soft blur, then Tap to Enter opening up
               (which also buys the transition time to load) */}
           <PortalFlower />
-          <div aria-hidden className="animate-cine-shade absolute inset-x-0 top-0 h-[34%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
-          <div aria-hidden className="animate-cine-shade absolute inset-x-0 bottom-0 h-[24%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)" }} />
           <div className="relative mt-[12svh] flex w-full flex-col items-center">
             <img src={LOGO} alt={ARTIST_NAME} className="animate-cine-logo gold-glow w-[78%] max-w-[22rem]" />
             <span className="mt-5 flex items-center gap-3 text-[var(--sm-gold-light)]" style={{ animation: "breathe 3.2s ease-in-out infinite" }}>
