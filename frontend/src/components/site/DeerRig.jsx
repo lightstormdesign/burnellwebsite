@@ -77,7 +77,7 @@ const PULSE_MASK = { WebkitMaskImage: SILHOUETTE, maskImage: SILHOUETTE };
 // rising motes of light off the antler tips (two per tip, staggered)
 const Motes = ({ tips }) =>
   tips.flatMap(([x, y], k) =>
-    [0, 1].map((n) => (
+    [0].map((n) => (
       <span
         key={`${k}-${n}`}
         aria-hidden
@@ -144,7 +144,11 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
         shown = key;
         HEADS.forEach((h, i) => {
           const el = headRefs.current[i];
-          if (el) el.style.opacity = Math.max(0, 1 - Math.abs(L - h.look)).toFixed(3);
+          if (!el) return;
+          const o = Math.max(0, 1 - Math.abs(L - h.look));
+          el.style.opacity = o.toFixed(3);
+          // a hidden head isn't drawn at all (its motes stop costing anything)
+          el.style.visibility = o > 0 ? "visible" : "hidden";
         });
         if (sideRef.current) sideRef.current.style.transform = `rotate(${tilt.toFixed(2)}deg)`;
       }
@@ -188,17 +192,20 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
           <div aria-hidden className="deer-pulse" style={{ ...PULSE_MASK, animationDelay: "2s" }} />
         </>
       )}
-      {/* the deer, with a fine golden outline */}
+      {/* a fine golden outline: a gold copy of the silhouette, a hair larger,
+          just behind the deer (an image, not a filter, so it costs nothing) */}
+      <div aria-hidden className="deer-outline" style={PULSE_MASK} />
+      {/* the deer */}
       <div className="deer-gold absolute inset-0">
         <img src={load ? P("tail") : undefined} alt="" className="deer-tail absolute inset-0 h-full w-full" />
         <img src={load ? P("body") : undefined} onLoad={onLoad} onError={onLoad} alt="" decoding="async" className="absolute inset-0 h-full w-full" />
         <div className="absolute inset-0">
           {HEADS.map((h, i) =>
             h.box ? (
-              <div key={h.key} ref={(el) => (headRefs.current[i] = el)} className="absolute inset-0" style={{ opacity: 0 }}>
+              <div key={h.key} ref={(el) => (headRefs.current[i] = el)} className="absolute inset-0" style={{ opacity: 0, visibility: "hidden" }}>
                 <div className="absolute" style={{ left: `${h.box[0]}%`, top: `${h.box[1]}%`, width: `${h.box[2]}%` }}>
                   <img src={load ? P(`head-${h.key}`) : undefined} alt="" className="block w-full max-w-none" />
-                  <img src={load ? P(`antlers-${h.key}`) : undefined} alt="" aria-hidden className="deer-antler-glow absolute inset-0 h-full w-full" />
+                  <img src={load ? P(`antlers-${h.key}-glow`) : undefined} alt="" aria-hidden className="deer-antler-glow absolute inset-0 h-full w-full" />
                 </div>
                 <Motes tips={h.tips} />
               </div>
@@ -208,7 +215,7 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
               <div key={h.key} ref={(el) => (headRefs.current[i] = el)} className="absolute inset-0">
                 <div ref={sideRef} className="absolute inset-0" style={{ transformOrigin: "74% 27.5%" }}>
                   <img src={load ? P("head") : undefined} alt="" className="absolute inset-0 h-full w-full" />
-                  <img src={load ? P("antlers") : undefined} alt="" aria-hidden className="deer-antler-glow absolute inset-0 h-full w-full" />
+                  <img src={load ? P("antlers-glow") : undefined} alt="" aria-hidden className="deer-antler-glow absolute inset-0 h-full w-full" />
                   <Motes tips={h.tips} />
                   <img src={load ? P("ear") : undefined} alt="" className="deer-ear absolute inset-0 h-full w-full" />
                 </div>
