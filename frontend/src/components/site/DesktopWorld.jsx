@@ -50,8 +50,9 @@ const TILT_EASE = 0.06; // the mouse is jumpier than a phone's tilt: glide more
 const ENTER_LOCK_MS = 900; // after landing, the wheel waits a moment (no momentum carry-over)
 // Whip pan to the leaf, then the drop falls into the world. Its first frame
 // is the portal photo; its last is the world's landing.
-const TRANSITION = "/burnell-transition-desktop.mp4?v=3";
-const TRANSITION_FAILSAFE_MS = 14000;
+const TRANSITION = "/burnell-transition-desktop.mp4?v=4";
+const TRANSITION_FAILSAFE_MS = 9000; // the video is 5s
+const STALL_MS = 1200; // its clock stuck this long: kick it once, then go on to the world
 const LANDING_EARLY_S = 1.3; // the B starts rising this long before the video ends
 const WARM_DELAY_MS = 700;
 const STORY_HASH = "#story";
@@ -298,6 +299,8 @@ export const DesktopWorld = () => {
   const [landingEarly, setLandingEarly] = useState(false);
   const videoRef = useRef(null);
   const failsafeRef = useRef(null);
+  const stallRef = useRef(null);
+  const blobUrlRef = useRef(null);
 
   const stageRef = useRef(null);
   const layerRefs = useRef([]);
@@ -419,9 +422,67 @@ export const DesktopWorld = () => {
     if (skipVideo || reduceMotion || !v) return startWorld();
     phaseRef.current = "transition";
     setPhase("transition");
-    v.play().catch(startWorld);
+    v.play().catch(() => {
+      // the in-memory copy wouldn't play: try the network copy once
+      if (!v.src.startsWith("blob:")) return startWorld();
+      v.src = TRANSITION;
+      v.play().catch(startWorld);
+    });
+    watchStall(v);
     failsafeRef.current = setTimeout(startWorld, TRANSITION_FAILSAFE_MS);
   };
+
+  // Never let the transition sit frozen (what took so long to beat on the
+  // phone): every 250ms, resume it if the browser paused it, and if its
+  // clock stops, nudge it once, then carry on to the world.
+  const watchStall = (v) => {
+    let lastT = -1;
+    let movedAt = performance.now();
+    let kicked = false;
+    clearInterval(stallRef.current);
+    stallRef.current = setInterval(() => {
+      if (v.ended) return clearInterval(stallRef.current);
+      const now = performance.now();
+      if (v.paused) v.play().catch(() => {});
+      if (v.currentTime !== lastT) {
+        lastT = v.currentTime;
+        movedAt = now;
+        return;
+      }
+      if (now - movedAt < STALL_MS) return;
+      if (!kicked) {
+        kicked = true;
+        movedAt = now;
+        try {
+          v.currentTime = v.currentTime + 0.001;
+        } catch (e) {}
+        v.play().catch(() => {});
+      } else {
+        startWorld();
+      }
+    }, 250);
+  };
+
+  // Download the whole transition into memory while they look at the
+  // portal, so it never waits on the network mid-play. If they tap first,
+  // it plays from the network.
+  useEffect(() => {
+    if (!warm) return;
+    let cancelled = false;
+    fetch(TRANSITION)
+      .then((r) => (r.ok ? r.blob() : Promise.reject()))
+      .then((b) => {
+        const v = videoRef.current;
+        if (cancelled || !v || phaseRef.current !== "portal") return;
+        blobUrlRef.current = URL.createObjectURL(b);
+        v.src = blobUrlRef.current;
+        v.load();
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [warm]);
 
   // Gold rings spreading from the tap, over everything, each removing itself.
   const burst = (x, y) =>
@@ -436,6 +497,7 @@ export const DesktopWorld = () => {
   const startWorld = () => {
     if (phaseRef.current === "world") return;
     clearTimeout(failsafeRef.current);
+    clearInterval(stallRef.current);
     phaseRef.current = "world";
     setLocked(true);
     setPhase("world");
@@ -476,6 +538,8 @@ export const DesktopWorld = () => {
     () => () => {
       songRef.current?.pause();
       clearTimeout(failsafeRef.current);
+      clearInterval(stallRef.current);
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
     },
     []
   );
