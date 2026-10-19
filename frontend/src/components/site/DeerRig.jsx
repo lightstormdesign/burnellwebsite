@@ -2,11 +2,11 @@ import { useEffect, useRef } from "react";
 
 // The deer in Burnell's world, alive. The body, tail and the original
 // side-on head are cut from the illustration, each sitting exactly where it
-// was; three more heads (drawn in the same style) turn it: three-quarter,
-// facing you, and head down. Scrolling turns the head through those angles
-// (scroll back and it turns back), and tapping it makes it look at you.
-// Only the ear flicks and the tail swish run on their own (CSS); the head
-// is entirely the scroller's (and the tap's).
+// was. Scrolling tilts that head up and down (scroll back and it tilts
+// back): the scroller is in control. Tapping the deer plays the three other
+// heads (drawn in the same style): it turns to three-quarter, looks right
+// at you, then turns back, bows its head and returns to side-on. Only the
+// ear flicks and the tail swish run on their own (CSS).
 // Stands in for the deer layer's <img>: the world positions and sizes it
 // the same way (the ref gets the layer's width and transform).
 const P = (k) => `/burnell-world-deer-${k}.webp`;
@@ -19,11 +19,25 @@ const HEADS = [
   { key: "three", look: 1, box: [33.28, 1.271, 64.17] },
   { key: "front", look: 2, box: [42.395, 2.971, 75.02] },
 ];
-const LOOK_MIN = -1;
-const LOOK_MAX = 2;
-const SCROLL_PER_TURN = 0.55; // screen heights of scroll for one radian of the sweep
-const TAP_LOOK_MS = 2600; // how long it holds your gaze after a tap
+// The tap: which head shows over time (s), as a "look" value matching the
+// heads above; in between two heads they cross-fade.
+const TAP_LOOK = [[0, 0], [0.35, 1], [0.7, 2], [2.3, 2], [2.65, 1], [3.0, 0], [3.4, -1], [4.0, -1], [4.4, 0]];
+// The scroll: the side head's tilt, in degrees (negative lifts the muzzle).
+const TILT_MID = -2.5;
+const TILT_SWING = 11.5;
+const SCROLL_PER_TURN = 0.2; // screen heights of scroll for one radian of the swing (a full nod per ~1.25 screens)
 const EASE = 0.12;
+const lookAt = (t) => {
+  for (let i = 1; i < TAP_LOOK.length; i++) {
+    const [t1, v1] = TAP_LOOK[i];
+    const [t0, v0] = TAP_LOOK[i - 1];
+    if (t <= t1) {
+      const u = (t - t0) / (t1 - t0);
+      return v0 + (v1 - v0) * u * u * (3 - 2 * u);
+    }
+  }
+  return 0;
+};
 
 export const DeerRig = ({ refFn, load, onLoad }) => {
   const rootRef = useRef(null);
@@ -31,9 +45,9 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let look = 0;
+    let tilt = TILT_MID;
     let shown = null;
-    let tapUntil = 0;
+    let tapAt = -1e9;
     let raf = 0;
 
     // A tap anywhere on or near the deer (the story's layers sit above the
@@ -45,7 +59,10 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
       if (!el) return;
       const r = el.getBoundingClientRect();
       const pad = Math.max(30, r.width * 0.4);
-      if (x > r.left - pad && x < r.right + pad && y > r.top - pad && y < r.bottom + pad) tapUntil = performance.now() + TAP_LOOK_MS;
+      if (x > r.left - pad && x < r.right + pad && y > r.top - pad && y < r.bottom + pad) {
+        const now = performance.now();
+        if (now - tapAt > 4400) tapAt = now; // a tap mid-turn lets it finish
+      }
     };
     const onDown = (e) => hit(e.clientX, e.clientY);
     const onTouch = (e) => e.touches[0] && hit(e.touches[0].clientX, e.touches[0].clientY);
@@ -53,19 +70,20 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
     window.addEventListener("touchstart", onTouch, { passive: true, capture: true });
 
     const frame = (now) => {
-      // where the scroll says to look: a gentle sweep from head-down through
-      // side-on to facing you and back, as you scroll down
-      const s = window.scrollY / (window.innerHeight * SCROLL_PER_TURN);
-      const fromScroll = 0.5 + 1.5 * Math.sin(s);
-      const target = now < tapUntil ? LOOK_MAX : fromScroll;
-      look += (target - look) * (reduce ? 1 : EASE);
-      const key = look.toFixed(3);
+      // the scroll tilts the side-on head up and down
+      // (an even back-and-forth, so every bit of scroll moves it)
+      const target = TILT_MID + TILT_SWING * (2 / Math.PI) * Math.asin(Math.sin(window.scrollY / (window.innerHeight * SCROLL_PER_TURN)));
+      tilt += (target - tilt) * (reduce ? 1 : EASE);
+      // a tap turns it to look at you, through the other heads
+      const L = lookAt((now - tapAt) / 1000);
+      const key = `${tilt.toFixed(2)}|${L.toFixed(3)}`;
       if (key !== shown) {
         shown = key;
-        const L = Math.max(LOOK_MIN, Math.min(LOOK_MAX, look));
         HEADS.forEach((h, i) => {
           const el = headRefs.current[i];
-          if (el) el.style.opacity = Math.max(0, 1 - Math.abs(L - h.look)).toFixed(3);
+          if (!el) return;
+          el.style.opacity = Math.max(0, 1 - Math.abs(L - h.look)).toFixed(3);
+          if (!h.box) el.style.transform = `rotate(${tilt.toFixed(2)}deg)`;
         });
       }
       raf = requestAnimationFrame(frame);
@@ -101,7 +119,7 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
               style={{ left: `${h.box[0]}%`, top: `${h.box[1]}%`, width: `${h.box[2]}%`, opacity: 0 }}
             />
           ) : (
-            <div key={h.key} ref={(el) => (headRefs.current[i] = el)} className="absolute inset-0">
+            <div key={h.key} ref={(el) => (headRefs.current[i] = el)} className="absolute inset-0" style={{ transformOrigin: "77.3% 34.9%" }}>
               <img src={load ? P("head") : undefined} alt="" className="absolute inset-0 h-full w-full" />
               <img src={load ? P("ear") : undefined} alt="" className="deer-ear absolute inset-0 h-full w-full" />
             </div>
