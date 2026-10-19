@@ -833,3 +833,32 @@ html.intro-playing [data-testid="site-navbar"] { opacity: 0; }
   animation: intro-glint 0.8s cubic-bezier(0.45, 0, 0.35, 1) 0.45s both;
   will-change: background-position;
 }
+
+/* ---- The deer (DeerRig.jsx): pivots measured on the 300x430 original ---- */
+.deer-head { transform-origin: 77.3% 34.9%; animation: deer-look 9s ease-in-out infinite; }
+@keyframes deer-look {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-2.6deg) translateY(0.4%); }
+  55% { transform: rotate(1.8deg) translateY(-0.3%); }
+  75% { transform: rotate(-0.8deg); }
+}
+.deer-ear { transform-origin: 69.3% 27%; animation: deer-ear 7s ease-in-out infinite; }
+@keyframes deer-ear {
+  0%, 60%, 70%, 100% { transform: rotate(0deg); }
+  63% { transform: rotate(14deg); }
+  66% { transform: rotate(-4deg); }
+  68% { transform: rotate(9deg); }
+}
+.deer-tail { transform-origin: 17.3% 54%; animation: deer-tail 11s ease-in-out infinite; }
+@keyframes deer-tail {
+  0%, 40%, 52%, 100% { transform: rotate(0deg); }
+  43% { transform: rotate(9deg); }
+  46% { transform: rotate(-7deg); }
+  49% { transform: rotate(5deg); }
+}
+.deer-body { transform-origin: 50% 100%; animation: deer-breathe 3.6s ease-in-out infinite; }
+@keyframes deer-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.006); } }
+@media (prefers-reduced-motion: reduce) {
+  .deer-head, .deer-ear, .deer-tail, .deer-body { animation: none; }
+}
+

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, Volume2, VolumeOff } from "lucide-react";
 import { AnnouncementBubble } from "@/components/site/AnnouncementBubble";
 import { PortalFlower } from "@/components/site/PortalFlower";
+import { DeerRig } from "@/components/site/DeerRig";
 import { WorldProgress } from "@/components/site/WorldProgress";
 import { Creature, Emblem3D } from "@/components/site/WorldHome";
 import {
@@ -824,16 +825,20 @@ export const DesktopWorld = () => {
         <div ref={blurRef} className="absolute inset-0" style={{ filter: "blur(6px)" }}>
           {LAYERS.map((L, i) => (
             <Fragment key={L.key}>
+              {L.key === "deer" ? (
+                <DeerRig refFn={(el) => (layerRefs.current[i] = el)} load={warm} onLoad={onLayerLoad} />
+              ) : (
               <img
-                ref={(el) => (layerRefs.current[i] = el)}
-                src={warm ? L.src : undefined}
-                onLoad={onLayerLoad}
-                onError={onLayerLoad}
-                alt=""
-                decoding="async"
-                className="absolute left-0 top-0 max-w-none select-none"
-                style={{ willChange: "transform", transformOrigin: "0 0" }}
-              />
+                  ref={(el) => (layerRefs.current[i] = el)}
+                  src={warm ? L.src : undefined}
+                  onLoad={onLayerLoad}
+                  onError={onLayerLoad}
+                  alt=""
+                  decoding="async"
+                  className="absolute left-0 top-0 max-w-none select-none"
+                  style={{ willChange: "transform", transformOrigin: "0 0" }}
+                />
+              )}
               {CREATURES.map((c, ci) =>
                 (c.space === "free" ? c.after : c.layer) === L.key ? <Creature key={c.id} c={c} load={warm} refFn={(el) => (creatureRefs.current[ci] = el)} /> : null
               )}
