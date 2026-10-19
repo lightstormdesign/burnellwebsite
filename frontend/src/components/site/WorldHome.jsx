@@ -1213,23 +1213,6 @@ export const WorldHome = () => {
         <div aria-hidden className="pointer-events-none fixed inset-0 z-[32]" style={{ background: "rgba(0,0,0,0.012)" }} />
       )}
 
-      {/* The portal's shading (darker top and bottom), carried over the
-          transition's start and eased off, so the tap doesn't suddenly
-          brighten the sky. Just a still overlay: the video itself is
-          untouched. */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 z-[33]"
-        style={{
-          height: "100lvh",
-          opacity: phase === "world" || (phase === "transition" && transitionPlaying) ? 0 : 1,
-          transition: phase === "world" ? "opacity 0.6s ease" : "opacity 1.6s ease 0.4s",
-        }}
-      >
-        <div className="absolute inset-x-0 top-0 h-[34%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
-        <div className="absolute inset-x-0 bottom-0 h-[24%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)" }} />
-      </div>
-
       {/* Portal: intro, then hold loop, until the tap (and until the
           transition's first frame is actually on screen) */}
       <button
