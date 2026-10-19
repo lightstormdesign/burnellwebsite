@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 // was. Scrolling tilts that head up and down (scroll back and it tilts
 // back): the scroller is in control. Tapping the deer plays the two other
 // heads (drawn in the same style): it turns to three-quarter, looks right
-// at you, then turns back to side-on, blurring a touch as it moves.
+// at you, then turns back to side-on, each head fading into the next.
 // Every head's antlers glow, with motes of light rising off their tips.
 // Around it: a golden outline that pulses out into the world, a faint open
 // Flower of Life and a soft rainbow glow. Hovering brightens all of it.
@@ -49,9 +49,9 @@ const HEADS = [
 ];
 
 // The tap: which head shows over time (s), as a "look" value matching the
-// heads above; between two heads they cross-fade, with a little blur.
-const TAP_LOOK = [[0, 0], [0.45, 1], [0.9, 2], [2.5, 2], [2.95, 1], [3.4, 0]];
-const TAP_S = 3.4;
+// heads above; between two heads they cross-fade.
+const TAP_LOOK = [[0, 0], [0.6, 1], [1.2, 2], [2.8, 2], [3.4, 1], [4.0, 0]];
+const TAP_S = 4.0;
 // The scroll: the side head's tilt, in degrees (negative lifts the muzzle).
 // Lowest 9deg down, highest 4deg up (it doesn't throw its head back).
 const TILT_MID = 2.5;
@@ -89,7 +89,6 @@ const Motes = ({ tips }) =>
 
 export const DeerRig = ({ refFn, load, onLoad }) => {
   const rootRef = useRef(null);
-  const headWrapRef = useRef(null);
   const headRefs = useRef([]);
   const sideRef = useRef(null);
 
@@ -148,10 +147,6 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
           if (el) el.style.opacity = Math.max(0, 1 - Math.abs(L - h.look)).toFixed(3);
         });
         if (sideRef.current) sideRef.current.style.transform = `rotate(${tilt.toFixed(2)}deg)`;
-        // mid-turn the head blurs a touch, so the cross-fade reads as
-        // movement rather than a swap
-        const mid = Math.abs(L - Math.round(L));
-        if (headWrapRef.current) headWrapRef.current.style.filter = mid > 0.02 && !reduce ? `blur(${(mid * 2.4).toFixed(2)}px)` : "none";
       }
       raf = requestAnimationFrame(frame);
     };
@@ -197,7 +192,7 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
       <div className="deer-gold absolute inset-0">
         <img src={load ? P("tail") : undefined} alt="" className="deer-tail absolute inset-0 h-full w-full" />
         <img src={load ? P("body") : undefined} onLoad={onLoad} onError={onLoad} alt="" decoding="async" className="absolute inset-0 h-full w-full" />
-        <div ref={headWrapRef} className="absolute inset-0">
+        <div className="absolute inset-0">
           {HEADS.map((h, i) =>
             h.box ? (
               <div key={h.key} ref={(el) => (headRefs.current[i] = el)} className="absolute inset-0" style={{ opacity: 0 }}>
