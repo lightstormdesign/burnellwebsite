@@ -747,3 +747,48 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .enter-ripple { animation: none; opacity: 0; }
 }
+
+/* ---- Burnell's water cursor (WaterCursor.jsx, which also sets the drop
+   cursor images): faint rings where the drop moves ---- */
+@keyframes water-ripple {
+  from { transform: translate(-50%, -50%) scale(0.2); opacity: 0.55; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+.water-ripple {
+  position: fixed; width: 74px; height: 74px; border-radius: 50%; pointer-events: none; z-index: 9998;
+  border: 1px solid rgba(255, 238, 200, 0.75);
+  box-shadow: 0 0 6px rgba(214, 179, 101, 0.35);
+  animation: water-ripple 1.2s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+.water-ripple--click { width: 120px; height: 120px; border-width: 1.5px; animation-duration: 1s; }
+
+/* ---- Home world scroll progress (WorldProgress.jsx): a line of water
+   filling left to right, a glowing drop at its edge ---- */
+.world-progress { background: rgba(255, 255, 255, 0.16); }
+.world-progress-fill {
+  background: linear-gradient(90deg, #7cc4d8, #e8cf9a 65%, #fff3d6);
+  box-shadow: 0 0 12px 1px rgba(243, 223, 176, 0.7);
+  transition: transform 0.15s linear;
+}
+.world-progress-drop {
+  width: 11px; height: 11px; border-radius: 50%; transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 35% 35%, #fffaf0, #e8cf9a 60%, #c9a24f);
+  box-shadow: 0 0 10px 3px rgba(243, 223, 176, 0.75);
+  transition: left 0.15s linear;
+}
+.world-progress-drop::after {
+  content: ""; position: absolute; inset: -6px; border-radius: 50%;
+  border: 1px solid rgba(243, 223, 176, 0.7);
+  animation: progress-drop-ring 2.2s ease-out infinite;
+}
+@keyframes progress-drop-ring { from { transform: scale(0.4); opacity: 0.9; } to { transform: scale(2.2); opacity: 0; } }
+
+/* the Home world scrolls without a scrollbar (it appearing shifted the
+   whole landing sideways); WorldProgress shows where you are instead */
+html.no-scrollbar { scrollbar-width: none; }
+html.no-scrollbar::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .world-progress-drop::after { animation: none; opacity: 0; }
+}
+

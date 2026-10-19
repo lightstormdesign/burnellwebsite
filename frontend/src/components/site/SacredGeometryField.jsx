@@ -96,12 +96,11 @@ const WorldReveal = () => (
 );
 
 export const SacredGeometryField = () => {
-  // The wand-reveal layer is replaced by StardustMist.jsx on the Home page
-  // specifically ("replace the spotlight with stardust mist") — everywhere
-  // else it's unchanged. The faint ambient watermark stays everywhere,
-  // Home included.
+  // The faint ambient watermark stays everywhere. The cursor no longer
+  // reveals a brighter copy of the flowers (Burnell's cursor makes water
+  // ripples instead, see WaterCursor.jsx); the dark pages still reveal his
+  // illustrated world around it.
   const { pathname } = useLocation();
-  const isHome = pathname === "/";
 
   return (
     <>
@@ -116,12 +115,6 @@ export const SacredGeometryField = () => {
       </div>
 
       {WORLD_REVEAL_ROUTES.includes(pathname) && <WorldReveal />}
-
-      {!isHome && !WORLD_REVEAL_ROUTES.includes(pathname) && (
-        <div aria-hidden className="sacred-geometry-reveal sacred-geometry-portal-fx pointer-events-none fixed inset-0 z-[1] hidden overflow-hidden md:block">
-          <FlowerCluster opacity={0.85} strokeWidth={0.008} animated={false} />
-        </div>
-      )}
     </>
   );
 };

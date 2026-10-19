@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, Volume2, VolumeOff } from "lucide-react";
 import { AnnouncementBubble } from "@/components/site/AnnouncementBubble";
 import { PortalFlower } from "@/components/site/PortalFlower";
+import { WorldProgress } from "@/components/site/WorldProgress";
 import { Creature, Emblem3D } from "@/components/site/WorldHome";
 import {
   ABOUT_STAGES,
@@ -49,7 +50,7 @@ const TILT_EASE = 0.06; // the mouse is jumpier than a phone's tilt: glide more
 const ENTER_LOCK_MS = 900; // after landing, the wheel waits a moment (no momentum carry-over)
 // Whip pan to the leaf, then the drop falls into the world. Its first frame
 // is the portal photo; its last is the world's landing.
-const TRANSITION = "/burnell-transition-desktop.mp4?v=2";
+const TRANSITION = "/burnell-transition-desktop.mp4?v=3";
 const TRANSITION_FAILSAFE_MS = 14000;
 const LANDING_EARLY_S = 1.3; // the B starts rising this long before the video ends
 const WARM_DELAY_MS = 700;
@@ -358,9 +359,8 @@ export const DesktopWorld = () => {
   }, []);
 
   // Page scroll only in the world; chapters settle gently (proximity snap).
-  // In the world the site-wide wand dimming and flower watermark step aside:
-  // the world has its own light, and a full-screen backdrop filter over a
-  // moving scene costs every frame.
+  // No scrollbar (it appearing as the world arrived shifted everything
+  // sideways); WorldProgress along the bottom shows where you are.
   useEffect(() => {
     const root = document.documentElement;
     if (inWorld && !locked) {
@@ -369,13 +369,15 @@ export const DesktopWorld = () => {
     } else {
       root.style.overflow = "hidden";
     }
-    if (inWorld) root.style.setProperty("--portal-fx-intensity", "0");
     return () => {
       root.style.overflow = "";
       root.style.scrollSnapType = "";
     };
   }, [inWorld, locked]);
-  useEffect(() => () => document.documentElement.style.removeProperty("--portal-fx-intensity"), []);
+  useEffect(() => {
+    document.documentElement.classList.add("no-scrollbar");
+    return () => document.documentElement.classList.remove("no-scrollbar");
+  }, []);
 
   const scrollToStory = () => {
     const a = anchorRefs.current[2];
@@ -815,6 +817,8 @@ export const DesktopWorld = () => {
           </span>
         </button>
       </div>
+
+      <WorldProgress active={inWorld} />
 
       <audio ref={songRef} src={MOBILE_HOME_MEDIA.song} preload={warm ? "auto" : "none"} loop />
       <button

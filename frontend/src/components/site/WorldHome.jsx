@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnnouncementBubble } from "@/components/site/AnnouncementBubble";
 import { PortalFlower } from "@/components/site/PortalFlower";
+import { WorldProgress } from "@/components/site/WorldProgress";
 import { ChevronDown, Volume2, VolumeOff } from "lucide-react";
 import { useTilt } from "@/hooks/useTilt";
 import {
@@ -1276,6 +1277,9 @@ export const WorldHome = () => {
           </div>
         </div>
       </button>
+
+      {/* how far through the world they are, and a nudge to keep going */}
+      <WorldProgress active={inWorld} />
 
       {/* buffered once the transition has downloaded (it comes first), so on
           the tap it can start at once */}

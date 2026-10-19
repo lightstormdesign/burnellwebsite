@@ -28,10 +28,9 @@ const Connect = lazy(PAGES.connect);
 const AdminApp = lazy(() => import("@/admin/AdminApp"));
 const PREFETCH_DELAY_MS = 8000;
 import { TrackingPixel } from "@/components/site/TrackingPixel";
-import { GlowCursor } from "@/components/site/GlowCursor";
+import { WaterCursor } from "@/components/site/WaterCursor";
 import { TouchRipples } from "@/components/site/TouchRipples";
 import { SacredGeometryField } from "@/components/site/SacredGeometryField";
-import { WorldDim } from "@/components/site/WorldDim";
 
 // On mobile the About page is gone: the story is told on Home, after the
 // world, so /about goes there. Desktop keeps the About page until the
@@ -72,8 +71,7 @@ function Site() {
     <>
       <TrackingPixel />
       <SacredGeometryField />
-      <WorldDim />
-      <GlowCursor />
+      <WaterCursor />
       <TouchRipples />
       <Suspense fallback={<div className="min-h-screen bg-black" />}>
         <Routes>
