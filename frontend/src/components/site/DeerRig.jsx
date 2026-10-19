@@ -12,6 +12,17 @@ import { useEffect, useRef } from "react";
 // the same way (the ref gets the layer's width and transform).
 const P = (k) => `/burnell-world-deer-${k}.webp`;
 
+// Flower of Life centres: a hexagonal lattice of circles out to three rings.
+const FLOWER = (() => {
+  const pts = [];
+  for (let q = -3; q <= 3; q++)
+    for (let r = -3; r <= 3; r++) {
+      if (Math.abs(q + r) > 3) continue;
+      pts.push([10 * (q + r / 2), 10 * r * Math.sin(Math.PI / 3)]);
+    }
+  return pts;
+})();
+
 // The extra heads, placed in the 300x430 deer's own frame:
 // [left %, top %, width %] (they can reach past its edges).
 const HEADS = [
@@ -23,10 +34,13 @@ const HEADS = [
 // heads above; in between two heads they cross-fade.
 const TAP_LOOK = [[0, 0], [0.35, 1], [0.7, 2], [2.3, 2], [2.65, 1], [3.0, 0]];
 // The scroll: the side head's tilt, in degrees (negative lifts the muzzle).
-const TILT_MID = -2;
-const TILT_SWING = 10;
-const SCROLL_PER_TURN = 0.2; // screen heights of scroll for one radian of the swing (a full nod per ~1.25 screens)
-const EASE = 0.12;
+// Lowest 9deg down, highest 4deg up (it doesn't throw its head back).
+const TILT_MID = 2.5;
+const TILT_SWING = 6.5;
+const SCROLL_PER_TURN = 0.11; // screen heights of scroll for one radian of the swing (a full nod per ~1.25 screens)
+const EASE = 0.18;
+// where the antler tips are (percent of the 300x430 deer): sparkles rise off them
+const TIPS = [[27.7, 5.1], [35.9, 2.6], [43.7, 0], [49.8, 0.5], [59.1, 7], [65.3, 8.1], [70.3, 9.1], [74, 8.1], [80, 15.8]];
 const lookAt = (t) => {
   for (let i = 1; i < TAP_LOOK.length; i++) {
     const [t1, v1] = TAP_LOOK[i];
@@ -109,18 +123,12 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
           golden Flower of Life turning slowly, and gold rings pulsing out */}
       <div aria-hidden className="deer-aura pointer-events-none absolute" style={{ left: "-30%", top: "-12%", width: "160%", height: "112%" }}>
         <div className="deer-aura-rainbow absolute inset-0" />
-        <svg className="deer-aura-geometry absolute inset-0 h-full w-full" viewBox="-60 -60 120 120" preserveAspectRatio="xMidYMid meet">
-          <g fill="none" stroke="rgba(255,232,180,1)" strokeWidth="0.45">
-            <circle r="30" />
-            <circle r="10" />
-            {[0, 60, 120, 180, 240, 300].map((a) => (
-              <circle key={a} r="10" cx={10 * Math.cos((a * Math.PI) / 180)} cy={10 * Math.sin((a * Math.PI) / 180)} />
-            ))}
-            {[30, 90, 150, 210, 270, 330].map((a) => (
-              <circle key={a} r="10" cx={17.32 * Math.cos((a * Math.PI) / 180)} cy={17.32 * Math.sin((a * Math.PI) / 180)} />
-            ))}
-            {[0, 60, 120, 180, 240, 300].map((a) => (
-              <circle key={`o${a}`} r="10" cx={20 * Math.cos((a * Math.PI) / 180)} cy={20 * Math.sin((a * Math.PI) / 180)} />
+        {/* an open Flower of Life (no enclosing circle), large, around the
+            whole deer, fading out at its edges into the world */}
+        <svg className="deer-aura-geometry absolute" style={{ left: "-25%", top: "-25%", width: "150%", height: "150%" }} viewBox="-60 -60 120 120" preserveAspectRatio="xMidYMid meet">
+          <g fill="none" stroke="rgba(255,232,180,1)" strokeWidth="0.3">
+            {FLOWER.map(([x, y], i) => (
+              <circle key={i} r="10" cx={x} cy={y} />
             ))}
           </g>
         </svg>
@@ -148,6 +156,11 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
             // nods up and down in place instead of swinging the antlers sideways
             <div key={h.key} ref={(el) => (headRefs.current[i] = el)} className="absolute inset-0" style={{ transformOrigin: "74% 27.5%" }}>
               <img src={load ? P("head") : undefined} alt="" className="absolute inset-0 h-full w-full" />
+              {/* the antlers glow, and sparkles rise off their tips */}
+              <img src={load ? P("antlers") : undefined} alt="" aria-hidden className="deer-antler-glow absolute inset-0 h-full w-full" />
+              {TIPS.map(([x, y], k) => (
+                <span key={k} aria-hidden className="deer-sparkle" style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${(k * 0.73) % 3.2}s`, animationDuration: `${2.6 + (k % 3) * 0.5}s` }} />
+              ))}
               <img src={load ? P("ear") : undefined} alt="" className="deer-ear absolute inset-0 h-full w-full" />
             </div>
           )
