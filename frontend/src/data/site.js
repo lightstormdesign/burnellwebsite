@@ -153,15 +153,16 @@ export const WORLD_LAYERS = [
 
 // The same world for computers (DesktopWorld.jsx), painted 16:9 on a
 // 1672x941 canvas. Same keys, order and meaning as WORLD_LAYERS: `start` is
-// the landing (the sky alone, everything else waiting below the screen, the
-// trees fully off each side), `end` is the landed world. The landing is
-// exactly the sky layer, which is also the desktop transition's end keyframe.
+// the landing (as on the phone: the mandala sky, the peaks rising out of the
+// clouds in the lower half, the far forest's tops along the bottom; the rest
+// waiting below the screen, the trees fully off each side), `end` is the
+// landed world. The landing is the desktop transition's end keyframe.
 const DW = (k) => `/burnell-world-desktop-${k}.webp`;
 export const DESKTOP_WORLD_CANVAS = { width: 1672, height: 941 };
 export const DESKTOP_WORLD_LAYERS = [
   { key: "sky", src: DW("sky"), w: 1672, start: [0, 0], end: [0, 0], span: [0, 1], depth: 0.04 },
-  { key: "mountains", src: DW("mountains"), w: 1672, start: [0, 700], end: [0, -30], span: [0, 1], depth: 0.1 },
-  { key: "forest-far", src: DW("forest-far"), w: 1672, start: [0, 760], end: [0, 40], span: [0, 1], depth: 0.18 },
+  { key: "mountains", src: DW("mountains"), w: 1672, start: [0, 240], end: [0, -30], span: [0, 1], depth: 0.1 },
+  { key: "forest-far", src: DW("forest-far"), w: 1672, start: [0, 440], end: [0, 40], span: [0, 1], depth: 0.18 },
   { key: "forest-near", src: DW("forest-near"), w: 1672, start: [0, 950], end: [0, 90], span: [0.05, 1], depth: 0.28 },
   { key: "stream", src: DW("stream"), w: 1672, start: [0, 900], end: [0, 120], span: [0.1, 1], depth: 0.4 },
   { key: "deer", src: "/burnell-world-deer.webp", w: 100, start: [790, 1242], end: [790, 462], span: [0.1, 1], depth: 0.4 },
