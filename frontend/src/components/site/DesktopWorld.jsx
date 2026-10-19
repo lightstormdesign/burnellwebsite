@@ -66,12 +66,14 @@ const CLOUD_TILT = 0.6;
 const PART_RANGE = 0.9;
 const FAR_FLOCK = [[0, 0], [-50, -20], [-50, 22], [-100, -38], [-98, 42]];
 const NEAR_FLOCK = [[0, 0], [86, -30], [98, 36]];
-const FISH_CYCLE_S = 7.5;
-const FISH_LEAP_S = 1.5;
-const WATERLINE = 672; // the pool between the cascades, in the stream layer
-const FISH_X = [640, 860];
+const FISH_CYCLE_S = 5;
+const FISH_LEAP_S = 1.6;
+// The trout leaps from the middle pool, right under the deer on the
+// center mound, over to the next pool to the right (stream-layer coordinates).
+const WATERLINE = 652;
+const FISH_X = [840, 1140];
 const FISH_DEPTH = 50;
-const FISH_RISE = 560;
+const FISH_RISE = 640;
 const FISH_SURFACE_U = (1 - Math.sqrt(1 - (4 * FISH_DEPTH) / FISH_RISE)) / 2;
 const RIPPLE_S = 1.2;
 const LEAVES = [
@@ -119,8 +121,8 @@ const CREATURES = [
     id: "fish",
     kind: "fish",
     layer: "stream",
-    w: 92,
-    clip: [520, 380, 1000, WATERLINE],
+    w: 110,
+    clip: [720, 380, 1200, WATERLINE],
     pose: (t, p) => {
       const u = (t % FISH_CYCLE_S) / FISH_LEAP_S;
       if (p < 0.75 || u > 1) return null;

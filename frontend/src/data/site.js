@@ -163,7 +163,7 @@ export const DESKTOP_WORLD_LAYERS = [
   { key: "forest-far", src: DW("forest-far"), w: 1672, start: [0, 760], end: [0, 40], span: [0, 1], depth: 0.18 },
   { key: "forest-near", src: DW("forest-near"), w: 1672, start: [0, 950], end: [0, 90], span: [0.05, 1], depth: 0.28 },
   { key: "stream", src: DW("stream"), w: 1672, start: [0, 900], end: [0, 120], span: [0.1, 1], depth: 0.4 },
-  { key: "deer", src: "/burnell-world-deer.webp", w: 100, start: [400, 1344], end: [400, 564], span: [0.1, 1], depth: 0.4 },
+  { key: "deer", src: "/burnell-world-deer.webp", w: 100, start: [790, 1242], end: [790, 462], span: [0.1, 1], depth: 0.4 },
   { key: "boulders", src: DW("boulders"), w: 1672, start: [0, 1000], end: [0, 330], span: [0.18, 1], depth: 0.55 },
   { key: "trees-left", src: DW("trees-left"), w: 1672, start: [-440, 0], end: [-60, 0], span: [0, 1], depth: 0.7 },
   { key: "trees-right", src: DW("trees-right"), w: 1672, start: [440, 0], end: [60, 0], span: [0, 1], depth: 0.7 },
