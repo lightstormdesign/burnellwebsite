@@ -854,3 +854,31 @@ html.intro-playing [data-testid="site-navbar"] { opacity: 0; }
   .deer-ear, .deer-tail { animation: none; }
 }
 
+/* the deer's aura (DeerRig.jsx): faint, slow, emanating from it */
+.deer-gold { filter: drop-shadow(0 0 0.6px rgba(255, 226, 150, 0.95)) drop-shadow(0 0 4px rgba(243, 200, 110, 0.45)); }
+.deer-aura { mix-blend-mode: screen; -webkit-mask-image: radial-gradient(closest-side, #000 40%, transparent 100%); mask-image: radial-gradient(closest-side, #000 40%, transparent 100%); }
+.deer-aura-rainbow {
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(255,120,120,0.55), rgba(255,200,110,0.55), rgba(240,240,130,0.5), rgba(130,230,160,0.5), rgba(120,190,255,0.55), rgba(190,140,255,0.55), rgba(255,120,200,0.5), rgba(255,120,120,0.55));
+  opacity: 0.35;
+  animation: deer-aura-spin 30s linear infinite, deer-aura-breathe 6s ease-in-out infinite;
+}
+.deer-aura-geometry { opacity: 0.5; animation: deer-aura-spin 80s linear infinite reverse; }
+@keyframes deer-aura-spin { to { transform: rotate(360deg); } }
+@keyframes deer-aura-breathe { 0%, 100% { opacity: 0.26; } 50% { opacity: 0.42; } }
+.deer-aura-ring {
+  position: absolute; left: 50%; top: 50%; width: 70%; aspect-ratio: 1; border-radius: 50%;
+  border: 1.5px solid rgba(255, 232, 180, 0.85);
+  box-shadow: 0 0 8px rgba(214, 179, 101, 0.55);
+  transform: translate(-50%, -50%) scale(0.3); opacity: 0;
+  animation: deer-aura-ring 6s ease-out infinite;
+}
+@keyframes deer-aura-ring {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  15% { opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(1.15); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deer-aura-rainbow, .deer-aura-geometry, .deer-aura-ring { animation: none; }
+}
+

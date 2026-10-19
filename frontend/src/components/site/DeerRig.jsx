@@ -6,7 +6,8 @@ import { useEffect, useRef } from "react";
 // back): the scroller is in control. Tapping the deer plays the three other
 // heads (drawn in the same style): it turns to three-quarter, looks right
 // at you, then turns back, bows its head and returns to side-on. Only the
-// ear flicks and the tail swish run on their own (CSS).
+// ear flicks and the tail swish run on their own (CSS), with a faint golden
+// outline and an aura (rainbow glow, sacred geometry, rings) behind it.
 // Stands in for the deer layer's <img>: the world positions and sizes it
 // the same way (the ref gets the layer's width and transform).
 const P = (k) => `/burnell-world-deer-${k}.webp`;
@@ -16,15 +17,15 @@ const P = (k) => `/burnell-world-deer-${k}.webp`;
 const HEADS = [
   { key: "down", look: -1, box: [37.01, 4.314, 66.65] },
   { key: "side", look: 0 },
-  { key: "three", look: 1, box: [33.28, 1.271, 64.17] },
-  { key: "front", look: 2, box: [42.395, 2.971, 75.02] },
+  { key: "three", look: 1, box: [33.28, 1.871, 64.17] },
+  { key: "front", look: 2, box: [42.395, 4.171, 75.02] },
 ];
 // The tap: which head shows over time (s), as a "look" value matching the
 // heads above; in between two heads they cross-fade.
 const TAP_LOOK = [[0, 0], [0.35, 1], [0.7, 2], [2.3, 2], [2.65, 1], [3.0, 0], [3.4, -1], [4.0, -1], [4.4, 0]];
 // The scroll: the side head's tilt, in degrees (negative lifts the muzzle).
-const TILT_MID = -2.5;
-const TILT_SWING = 11.5;
+const TILT_MID = -2;
+const TILT_SWING = 10;
 const SCROLL_PER_TURN = 0.2; // screen heights of scroll for one radian of the swing (a full nod per ~1.25 screens)
 const EASE = 0.12;
 const lookAt = (t) => {
@@ -105,6 +106,31 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
       className="absolute left-0 top-0 select-none"
       style={{ willChange: "transform", transformOrigin: "0 0", aspectRatio: "300 / 430" }}
     >
+      {/* the aura, emanating from the deer: a soft rainbow glow, a faint
+          golden Flower of Life turning slowly, and gold rings pulsing out */}
+      <div aria-hidden className="deer-aura pointer-events-none absolute" style={{ left: "-30%", top: "-12%", width: "160%", height: "112%" }}>
+        <div className="deer-aura-rainbow absolute inset-0" />
+        <svg className="deer-aura-geometry absolute inset-0 h-full w-full" viewBox="-60 -60 120 120" preserveAspectRatio="xMidYMid meet">
+          <g fill="none" stroke="rgba(255,232,180,1)" strokeWidth="0.45">
+            <circle r="30" />
+            <circle r="10" />
+            {[0, 60, 120, 180, 240, 300].map((a) => (
+              <circle key={a} r="10" cx={10 * Math.cos((a * Math.PI) / 180)} cy={10 * Math.sin((a * Math.PI) / 180)} />
+            ))}
+            {[30, 90, 150, 210, 270, 330].map((a) => (
+              <circle key={a} r="10" cx={17.32 * Math.cos((a * Math.PI) / 180)} cy={17.32 * Math.sin((a * Math.PI) / 180)} />
+            ))}
+            {[0, 60, 120, 180, 240, 300].map((a) => (
+              <circle key={`o${a}`} r="10" cx={20 * Math.cos((a * Math.PI) / 180)} cy={20 * Math.sin((a * Math.PI) / 180)} />
+            ))}
+          </g>
+        </svg>
+        <span className="deer-aura-ring" />
+        <span className="deer-aura-ring" style={{ animationDelay: "2s" }} />
+        <span className="deer-aura-ring" style={{ animationDelay: "4s" }} />
+      </div>
+      {/* the deer, with a fine golden outline */}
+      <div className="deer-gold absolute inset-0">
       <img src={load ? P("tail") : undefined} alt="" className="deer-tail absolute inset-0 h-full w-full" />
       <img src={load ? P("body") : undefined} onLoad={onLoad} onError={onLoad} alt="" decoding="async" className="deer-body absolute inset-0 h-full w-full" />
       <div className="deer-head absolute inset-0">
@@ -119,12 +145,15 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
               style={{ left: `${h.box[0]}%`, top: `${h.box[1]}%`, width: `${h.box[2]}%`, opacity: 0 }}
             />
           ) : (
-            <div key={h.key} ref={(el) => (headRefs.current[i] = el)} className="absolute inset-0" style={{ transformOrigin: "77.3% 34.9%" }}>
+            // pivots at the skull (behind the eye, at the ear's base), so it
+            // nods up and down in place instead of swinging the antlers sideways
+            <div key={h.key} ref={(el) => (headRefs.current[i] = el)} className="absolute inset-0" style={{ transformOrigin: "74% 27.5%" }}>
               <img src={load ? P("head") : undefined} alt="" className="absolute inset-0 h-full w-full" />
               <img src={load ? P("ear") : undefined} alt="" className="deer-ear absolute inset-0 h-full w-full" />
             </div>
           )
         )}
+      </div>
       </div>
     </div>
   );
