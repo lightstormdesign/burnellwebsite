@@ -436,6 +436,16 @@ export const Emblem3D = () => (
 export const WorldHome = () => {
   const [phase, setPhase] = useState("portal"); // portal | transition | world
   const [introDone, setIntroDone] = useState(false);
+  // The portal's videos stay hidden (black) until the intro has actually
+  // drawn a frame: a still fallback shown first jumped when the intro's 3D
+  // move kicked in. If the intro can't play (Low Power Mode), the loop's
+  // still shows instead, and nothing moves.
+  const [mediaShown, setMediaShown] = useState(false);
+  useEffect(() => {
+    if (introDone) setMediaShown(true);
+    const t = setTimeout(() => setMediaShown(true), 3000);
+    return () => clearTimeout(t);
+  }, [introDone]);
   const [transitionPlaying, setTransitionPlaying] = useState(false);
   const [warm, setWarm] = useState(false); // start loading everything past the portal
 
@@ -1228,6 +1238,7 @@ export const WorldHome = () => {
           visibility: phase === "transition" && transitionPlaying ? "hidden" : "visible",
         }}
       >
+        <div className="absolute inset-0" style={{ opacity: mediaShown ? 1 : 0, transition: "opacity 0.6s ease" }}>
         <video
           ref={loopRef}
           className="absolute inset-0 h-full w-full object-cover"
@@ -1248,10 +1259,14 @@ export const WorldHome = () => {
           muted
           playsInline
           preload="auto"
-          onPlaying={warmSoon}
+          onPlaying={(e) => {
+            warmSoon();
+            afterFirstFrame(e.currentTarget, () => setMediaShown(true));
+          }}
           onEnded={handleIntroEnded}
           tabIndex={-1}
         />
+        </div>
         {/* The shading stays put until the portal itself hands over (it used
             to fade with the logo below, which uncovered the loop's bright sky
             for a moment on tap; the transition's first frames carry the same
