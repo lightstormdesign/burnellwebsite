@@ -854,9 +854,14 @@ html.intro-playing [data-testid="site-navbar"] { opacity: 0; }
   .deer-ear, .deer-tail { animation: none; }
 }
 
-/* the deer's aura (DeerRig.jsx): faint, slow, emanating from it */
-.deer-gold { filter: drop-shadow(0 0 0.6px rgba(255, 226, 150, 0.95)) drop-shadow(0 0 4px rgba(243, 200, 110, 0.45)); }
-.deer-aura { mix-blend-mode: screen; }
+/* the deer's aura (DeerRig.jsx): faint, slow, emanating from it; all of it
+   brightens about 50% while hovered */
+.deer-gold { filter: drop-shadow(0 0 0.6px rgba(255, 226, 150, 0.95)) drop-shadow(0 0 4px rgba(243, 200, 110, 0.45)); animation: deer-outline 4s ease-in-out infinite; }
+@keyframes deer-outline {
+  0%, 100% { filter: drop-shadow(0 0 0.6px rgba(255, 226, 150, 0.9)) drop-shadow(0 0 3px rgba(243, 200, 110, 0.35)); }
+  50% { filter: drop-shadow(0 0 0.8px rgba(255, 236, 170, 1)) drop-shadow(0 0 7px rgba(243, 200, 110, 0.7)); }
+}
+.deer-aura { mix-blend-mode: screen; transition: opacity 0.4s ease; }
 .deer-aura-rainbow {
   border-radius: 50%;
   background: conic-gradient(from 0deg, rgba(255,120,120,0.55), rgba(255,200,110,0.55), rgba(240,240,130,0.5), rgba(130,230,160,0.5), rgba(120,190,255,0.55), rgba(190,140,255,0.55), rgba(255,120,200,0.5), rgba(255,120,120,0.55));
@@ -865,23 +870,36 @@ html.intro-playing [data-testid="site-navbar"] { opacity: 0; }
   -webkit-mask-image: radial-gradient(closest-side, #000 25%, transparent 100%); mask-image: radial-gradient(closest-side, #000 25%, transparent 100%);
   animation: deer-aura-spin 30s linear infinite, deer-aura-breathe 6s ease-in-out infinite;
 }
-.deer-aura-geometry { opacity: 0.25; -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent 100%); mask-image: radial-gradient(closest-side, #000 30%, transparent 100%); animation: deer-aura-spin 80s linear infinite reverse; }
+.deer-aura-geometry {
+  opacity: 0.21;
+  -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent 100%); mask-image: radial-gradient(closest-side, #000 30%, transparent 100%);
+  animation: deer-aura-spin 80s linear infinite reverse;
+}
 @keyframes deer-aura-spin { to { transform: rotate(360deg); } }
 @keyframes deer-aura-breathe { 0%, 100% { opacity: 0.32; } 50% { opacity: 0.5; } }
-.deer-aura-ring {
-  position: absolute; left: 50%; top: 50%; width: 70%; aspect-ratio: 1; border-radius: 50%;
-  border: 1.5px solid rgba(255, 232, 180, 0.85);
-  box-shadow: 0 0 8px rgba(214, 179, 101, 0.55);
-  transform: translate(-50%, -50%) scale(0.3); opacity: 0;
-  animation: deer-aura-ring 6s ease-out infinite;
+/* the outline pulsing out: a soft gold copy of the deer's silhouette that
+   grows from its edges and fades into the world */
+.deer-pulse {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 232, 170, 0.95), rgba(243, 200, 110, 0.8));
+  -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+  filter: blur(2px);
+  transform-origin: 52% 50%;
+  opacity: 0;
+  animation: deer-pulse 4s ease-out infinite;
 }
-@keyframes deer-aura-ring {
-  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
-  15% { opacity: 0.8; }
-  100% { transform: translate(-50%, -50%) scale(1.15); opacity: 0; }
+@keyframes deer-pulse {
+  0% { transform: scale(1); opacity: 0; }
+  12% { opacity: 0.55; }
+  100% { transform: scale(1.3); opacity: 0; filter: blur(6px); }
 }
+/* hover: everything about 50% brighter, and the cursor says "click me" */
+.deer-rig.is-hover .deer-aura { opacity: 1.5; filter: brightness(1.5); }
+.deer-rig.is-hover .deer-gold { animation-duration: 2s; filter: drop-shadow(0 0 1px rgba(255, 240, 190, 1)) drop-shadow(0 0 10px rgba(255, 210, 120, 0.9)); }
+.deer-rig.is-hover .deer-antler-glow { animation-duration: 2s; filter: brightness(2.2) saturate(1.2) blur(1.5px) drop-shadow(0 0 7px rgba(255, 220, 140, 1)); }
+.deer-rig.is-hover .deer-pulse { animation-duration: 2.6s; }
 @media (prefers-reduced-motion: reduce) {
-  .deer-aura-rainbow, .deer-aura-geometry, .deer-aura-ring { animation: none; }
+  .deer-aura-rainbow, .deer-aura-geometry { animation: none; }
 }
 
 /* the deer's antlers glow and sparkle (DeerRig.jsx) */
@@ -891,19 +909,41 @@ html.intro-playing [data-testid="site-navbar"] { opacity: 0; }
   animation: deer-antler-glow 4s ease-in-out infinite;
 }
 @keyframes deer-antler-glow { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.85; } }
-.deer-sparkle {
-  position: absolute; width: 2.2%; aspect-ratio: 1; border-radius: 50%;
-  background: radial-gradient(circle, #fffbe8 0%, rgba(255, 225, 150, 0.9) 35%, transparent 70%);
-  box-shadow: 0 0 3px 1px rgba(255, 220, 140, 0.8);
+/* motes of light rising off the antler tips, each trailing a faint line */
+.deer-mote {
+  position: absolute; width: 1.4%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, #fffdf2 0%, rgba(255, 230, 160, 0.95) 40%, transparent 72%);
+  box-shadow: 0 0 4px 1.5px rgba(255, 220, 140, 0.85);
   opacity: 0;
-  animation: deer-sparkle 3s ease-out infinite;
+  animation: deer-mote 3.6s ease-out infinite;
 }
-@keyframes deer-sparkle {
-  0% { transform: translate(-50%, 0) scale(0.4); opacity: 0; }
-  20% { opacity: 1; }
-  100% { transform: translate(-50%, -260%) scale(0.9); opacity: 0; }
+.deer-mote::after {
+  content: ""; position: absolute; left: 50%; top: 60%; width: 30%; height: 700%;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, rgba(255, 230, 160, 0.7), transparent);
+  border-radius: 9999px;
+}
+@keyframes deer-mote {
+  0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+  18% { opacity: 1; }
+  70% { opacity: 0.7; }
+  100% { transform: translate(-50%, -900%) translateX(30%) scale(0.8); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .deer-antler-glow, .deer-sparkle { animation: none; }
+  .deer-antler-glow, .deer-mote, .deer-pulse, .deer-gold { animation: none; }
+}
+
+/* desktop portal hover (DesktopWorld.jsx): a warm golden light rises over
+   it, and the way in brightens */
+.portal-hover-glow {
+  background: radial-gradient(ellipse 60% 70% at 80% 45%, rgba(255, 210, 130, 0.38), rgba(255, 190, 110, 0.12) 50%, transparent 80%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+[data-testid="desktop-portal"]:hover .portal-hover-glow { opacity: 1; }
+[data-testid="desktop-portal"]:hover [data-testid="desktop-enter"] > span:nth-child(2) > span:last-child {
+  background-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 70px rgba(214, 179, 101, 0.65), inset 0 0 30px rgba(214, 179, 101, 0.35);
 }
 

@@ -13,14 +13,16 @@ const RIPPLE_EVERY_PX = 70; // distance travelled between rings
 const RIPPLE_MIN_MS = 90;
 const MAX_LIVE = 8;
 const LIFETIME_MS = 1300;
-// The drop for the arrow, a brighter one over anything clickable; text
+// The drop for the arrow, a bigger, glowing one over anything clickable
+// (the deer too, which sits under the story's layers); text
 // fields keep their caret. (Set from here: the CSS build can't bundle
 // images from /public.)
 const CURSOR_CSS = `
 html.water-cursor, html.water-cursor * { cursor: url("/burnell-cursor-drop.png") 16 2, auto; }
 html.water-cursor :is(a, button, [role="button"], label, select, summary, [data-testid="desktop-portal"]),
-html.water-cursor :is(a, button, [role="button"], label, select, summary, [data-testid="desktop-portal"]) * {
-  cursor: url("/burnell-cursor-drop-active.png") 16 2, pointer;
+html.water-cursor :is(a, button, [role="button"], label, select, summary, [data-testid="desktop-portal"]) *,
+html.water-cursor.deer-hover, html.water-cursor.deer-hover * {
+  cursor: url("/burnell-cursor-drop-active.png?v=2") 22 4, pointer;
 }
 html.water-cursor :is(input:not([type="checkbox"]):not([type="radio"]), textarea) { cursor: text; }
 `;

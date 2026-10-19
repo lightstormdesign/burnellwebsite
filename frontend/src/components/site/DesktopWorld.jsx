@@ -1064,6 +1064,9 @@ export const DesktopWorld = () => {
             </div>
           </div>
         </div>
+        {/* hovering the portal warms it with a golden light, so it's clear
+            it does something */}
+        <div aria-hidden className="portal-hover-glow pointer-events-none absolute inset-0" />
         {/* the portal itself, faded in cinematically once the intro's done */}
         <div className="absolute inset-0" style={{ opacity: intro === "done" ? 1 : 0, transition: "opacity 1s ease 0.1s" }}>
         <PortalFlower spin top="18%" />
