@@ -54,16 +54,17 @@ const TRANSITION_FAILSAFE_MS = 14000;
 const LANDING_EARLY_S = 1.3; // the B starts rising this long before the video ends
 const WARM_DELAY_MS = 700;
 const STORY_HASH = "#story";
-// The portal: the canyon plate and Burnell cut out of it, so he stands in
-// front of the canyon and the two slide apart a little with the mouse. At
-// rest they rebuild the original 16:9 photo (the transition's first frame).
-// The cutout's box is in the 2560x1441 photo's pixels.
-const PORTAL = {
-  plate: "/burnell-portal-desktop-plate.webp",
-  burnell: "/burnell-portal-desktop-burnell.webp",
-  box: { left: 888 / 2560, top: 246 / 1441, width: 731 / 2560 },
-};
-const PORTAL_SHIFT = { plate: [14, 8], burnell: [-22, -10] }; // px at the edge of the screen
+// The portal: the Motionleap loop (3D drift and birds, then the same without
+// the birds), joined into one file that loops forever. The poster is its
+// first frame.
+const PORTAL_LOOP = "/burnell-portal-loop-desktop.mp4?v=1";
+const PORTAL_POSTER = "/burnell-portal-loop-desktop.webp";
+// rings that spread from wherever they tap to enter, like the drop landing
+const ENTER_BURST = [
+  { size: 260, ms: 1100, delay: 0 },
+  { size: 440, ms: 1500, delay: 90 },
+  { size: 680, ms: 1900, delay: 200 },
+];
 const BEAT_MAP = "/burnell-beautiful-beat.bin?v=8";
 const BEAT_FPS = 30;
 
@@ -310,8 +311,7 @@ export const DesktopWorld = () => {
   const beatMapRef = useRef(null);
   const phaseRef = useRef("portal");
   const mouse = useRef({ x: 0, y: 0 });
-  const portalPlateRef = useRef(null);
-  const portalBurnellRef = useRef(null);
+  const portalLoopRef = useRef(null);
   const layersLoaded = useRef(0);
   const pendingStoryRef = useRef(false);
 
@@ -407,8 +407,9 @@ export const DesktopWorld = () => {
   // Enter: play the transition (or go straight to the world when motion is
   // reduced, or for About's #story link). Muted video may always play; the
   // song needs the click, so only a click or a key starts it.
-  const enter = (withSong, skipVideo = false) => {
+  const enter = (withSong, skipVideo = false, at = null) => {
     if (phaseRef.current !== "portal") return;
+    if (at && !reduceMotion) burst(at.clientX, at.clientY);
     setWarm(true);
     if (withSong) startSong();
     window.scrollTo(0, 0);
@@ -419,6 +420,16 @@ export const DesktopWorld = () => {
     v.play().catch(startWorld);
     failsafeRef.current = setTimeout(startWorld, TRANSITION_FAILSAFE_MS);
   };
+
+  // Gold rings spreading from the tap, over everything, each removing itself.
+  const burst = (x, y) =>
+    ENTER_BURST.forEach(({ size, ms, delay }) => {
+      const el = document.createElement("div");
+      el.className = "touch-ripple";
+      Object.assign(el.style, { left: `${x}px`, top: `${y}px`, width: `${size}px`, height: `${size}px`, animationDuration: `${ms}ms`, animationDelay: `${delay}ms`, opacity: "0" });
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), ms + delay + 50);
+    });
 
   const startWorld = () => {
     if (phaseRef.current === "world") return;
@@ -479,8 +490,6 @@ export const DesktopWorld = () => {
     let tx = 0;
     let ty = 0;
     let beat = 0;
-    let mx = 0;
-    let my = 0;
     let fit = null;
     const placed = {};
     const t0 = performance.now();
@@ -561,15 +570,6 @@ export const DesktopWorld = () => {
             el.style.transform = `translateY(${((q - (i + 1)) * -30).toFixed(1)}px)`;
           });
         }
-      }
-
-      // portal parallax: the canyon drifts with the mouse, Burnell against it
-      if (phaseRef.current === "portal" && !reduceMotion) {
-        mx += (mouse.current.x - mx) * TILT_EASE;
-        my += (mouse.current.y - my) * TILT_EASE;
-        const shift = (el, [sx, sy]) => el && (el.style.transform = `translate3d(${(mx * sx).toFixed(1)}px, ${(my * sy).toFixed(1)}px, 0)`);
-        shift(portalPlateRef.current, PORTAL_SHIFT.plate);
-        shift(portalBurnellRef.current, PORTAL_SHIFT.burnell);
       }
 
       const live = phaseRef.current === "world";
@@ -721,7 +721,23 @@ export const DesktopWorld = () => {
         muted
         playsInline
         preload={warm ? "auto" : "none"}
-        onPlaying={() => setTransitionPlaying(true)}
+        onPlaying={(e) => {
+          // hand over only once a frame is actually on screen, so nothing
+          // behind it ever shows through
+          const v = e.currentTarget;
+          let done = false;
+          const go = () => {
+            if (done) return;
+            done = true;
+            v.removeEventListener("timeupdate", onTime);
+            setTransitionPlaying(true);
+            portalLoopRef.current?.pause();
+          };
+          const onTime = () => v.currentTime > 0.05 && go();
+          v.addEventListener("timeupdate", onTime);
+          if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(() => v.requestVideoFrameCallback(go));
+          setTimeout(go, 400);
+        }}
         onTimeUpdate={(e) => {
           const v = e.currentTarget;
           if (!landingEarly && v.duration && v.duration - v.currentTime <= LANDING_EARLY_S) setLandingEarly(true);
@@ -730,34 +746,37 @@ export const DesktopWorld = () => {
         tabIndex={-1}
       />
 
-      {/* Portal: Burnell in front of the canyon, and the way in on the right.
+      {/* Portal: Burnell's loop, and the way in on the right.
           Clicking anywhere enters too. Stays up until the transition's first
           frame is actually playing underneath it. */}
       <div
-        onClick={() => enter(true)}
+        onClick={(e) => enter(true, false, e)}
         data-testid="desktop-portal"
         className="fixed inset-0 z-40 cursor-pointer overflow-hidden bg-black"
         style={{
           opacity: phase === "portal" || (phase === "transition" && !transitionPlaying) ? 1 : 0,
-          transition: inWorld ? "opacity 0.7s ease" : "opacity 0.15s linear",
+          // a short dissolve into the whip: the loop is mid-drift when they tap
+          transition: inWorld ? "opacity 0.7s ease" : "opacity 0.3s ease",
           pointerEvents: phase === "portal" ? "auto" : "none",
           visibility: phase === "portal" || (phase === "transition" && !transitionPlaying) ? "visible" : "hidden",
         }}
       >
-        {/* the 16:9 photo, cover-fit and drawn slightly larger so the parallax never shows an edge */}
-        <div
-          className="absolute left-1/2 top-1/2"
-          style={{ width: "max(100vw, 177.78vh)", height: "max(100vh, 56.25vw)", transform: `translate(-50%, -50%) scale(${OVERSCAN})` }}
-        >
-          <img ref={portalPlateRef} src={PORTAL.plate} alt="" className="absolute inset-0 h-full w-full" />
-          <img
-            ref={portalBurnellRef}
-            src={PORTAL.burnell}
-            alt={ARTIST_NAME}
-            className="absolute"
-            style={{ left: `${PORTAL.box.left * 100}%`, top: `${PORTAL.box.top * 100}%`, width: `${PORTAL.box.width * 100}%` }}
-          />
-        </div>
+        {/* drawn at the same size as the transition and the world, so the handoff lines up */}
+        <video
+          ref={portalLoopRef}
+          data-testid="desktop-portal-loop"
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ transform: `scale(${OVERSCAN})` }}
+          src={PORTAL_LOOP}
+          poster={PORTAL_POSTER}
+          muted
+          loop
+          autoPlay
+          playsInline
+          preload="auto"
+          aria-label={ARTIST_NAME}
+          tabIndex={-1}
+        />
         <PortalFlower spin top="18%" />
         <div aria-hidden className="absolute inset-x-0 top-0 h-[30%]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-[30%]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }} />
@@ -768,11 +787,11 @@ export const DesktopWorld = () => {
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            enter(true);
+            enter(true, false, e);
           }}
           data-testid="desktop-enter"
           className="animate-cine-tap group absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
-          style={{ left: "78%", top: "54%" }}
+          style={{ left: "83%", top: "43%" }}
         >
           <span aria-hidden className="absolute left-1/2 top-1/2 -z-10 h-[190%] w-[230%] -translate-x-1/2 -translate-y-1/2" style={{ background: TEXT_POOL, filter: "blur(18px)" }} />
           <span className="relative flex h-28 w-28 items-center justify-center">
@@ -791,7 +810,7 @@ export const DesktopWorld = () => {
               </svg>
             </span>
           </span>
-          <span className="font-cinzel mt-7 text-base uppercase tracking-[0.42em] text-[#f3dfb0] text-legible" style={{ marginRight: "-0.42em" }}>
+          <span className="font-cinzel mt-7 whitespace-nowrap text-base uppercase tracking-[0.42em] text-[#f3dfb0] text-legible" style={{ marginRight: "-0.42em" }}>
             Tap Here to Enter
           </span>
         </button>
