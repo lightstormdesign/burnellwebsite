@@ -38,7 +38,6 @@ import {
 const DESCENT_VH = 200; // scroll distance of the descent into the world
 const CHAPTER_VH = 100; // scroll distance per story chapter
 const SCROLL_EASE = 5; // how quickly the world catches up to the wheel (per second)
-const STORY_ZOOM = 0.45; // how much the nearest layer grows over the whole story
 const STORY_DIM = 0.62; // how dark the world gets behind the chapters
 // Drawn a little larger than the screen, so the parallax never shows an edge.
 // The portal and the transition video are drawn at the same size, so every
@@ -684,8 +683,15 @@ export const DesktopWorld = () => {
         const D = anchors[1].offsetTop;
         const C = anchors[2].offsetTop - D;
         // near layers move against the mouse, far ones with it
-        tx += (-mouse.current.x - tx) * TILT_EASE;
-        ty += (-mouse.current.y - ty) * TILT_EASE;
+        // Once the world has fully landed, the layers freeze where they are
+        // (no story zoom, no mouse parallax): redrawing nine huge layers
+        // every frame under the darkening story stuttered on computers. Only
+        // the creatures and the dim keep moving.
+        const landed = ys >= D;
+        if (!landed) {
+          tx += (-mouse.current.x - tx) * TILT_EASE;
+          ty += (-mouse.current.y - ty) * TILT_EASE;
+        }
         const key = `${W}|${H}|${ys.toFixed(1)}|${target}|${tx.toFixed(3)}|${ty.toFixed(3)}`;
         if (key !== lastKey) {
           const sizeChanged = !lastKey.startsWith(`${W}|${H}|`);
@@ -709,7 +715,6 @@ export const DesktopWorld = () => {
                 el.style.width = `${(c.w * k).toFixed(1)}px`;
               }
             });
-          const z = clamp01((ys - D) / (C * CHAPTERS.length));
           LAYERS.forEach((L, i) => {
             const el = layerRefs.current[i];
             if (!el) return;
@@ -717,7 +722,7 @@ export const DesktopWorld = () => {
             const t = smooth(clamp01((p - L.span[0]) / (L.span[1] - L.span[0])));
             const x = L.start[0] + (L.end[0] - L.start[0]) * t;
             const y = L.start[1] + (L.end[1] - L.start[1]) * t;
-            const g = 1 + L.depth * STORY_ZOOM * z;
+            const g = 1; // no story zoom: the world holds still once landed
             const [ax, ay] = L.anchor || ZOOM_CENTER;
             const gx = ax + (x - ax) * g + tx * (L.depth - 0.3) * TILT_X;
             const gy = ay + (y - ay) * g + ty * Math.max(0, L.depth - 0.1) * TILT_Y;
