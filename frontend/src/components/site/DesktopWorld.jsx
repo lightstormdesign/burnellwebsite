@@ -59,14 +59,12 @@ const STORY_HASH = "#story";
 // The portal: the Motionleap loop (3D drift and birds, then the same without
 // the birds), joined into one file that loops forever. The poster is its
 // first frame.
-const PORTAL_LOOP = "/burnell-portal-loop-desktop.mp4?v=2";
-const PORTAL_POSTER = "/burnell-portal-loop-desktop.webp?v=2";
-// Burnell, cut out at full quality and laid exactly over himself in the
-// loop (box in fractions of the frame), so he stays sharp and stands out in
-// 3D: the canyon drifts with the mouse and he moves against it.
-const PORTAL_BURNELL = "/burnell-portal-desktop-burnell.webp?v=2";
-const BURNELL_BOX = { left: 0.34638, top: 0.168147, width: 0.287414 };
-const PORTAL_SHIFT = { loop: [12, 7], burnell: [-20, -9], flare: [-60, -34] }; // px at the screen's edge
+const PORTAL_LOOP = "/burnell-portal-loop-desktop.mp4?v=3";
+const PORTAL_POSTER = "/burnell-portal-loop-desktop.webp?v=3";
+// The portal's 3D: the whole scene tilts toward the mouse like a window you
+// look through (perspective), while the flare's ghosts slide across it.
+const PORTAL_TILT_DEG = [1.6, 1.1];
+const FLARE_SHIFT = [-60, -34]; // px at the screen's edge
 // golden-hour colour over the sky (soft light, so it tints, never paints)
 const SKY_TINT =
   "radial-gradient(ellipse 50% 55% at 90% 0%, rgba(255,190,110,0.95), transparent 70%), linear-gradient(to bottom, rgba(140,110,255,0.9) 0%, rgba(255,150,110,0.85) 16%, rgba(255,190,130,0.45) 30%, transparent 44%)";
@@ -653,16 +651,15 @@ export const DesktopWorld = () => {
         }
       }
 
-      // the portal's 3D: the loop and the flare's ghosts drift with the
-      // mouse, Burnell against them (eased; back to centre once they tap)
+      // the portal's 3D: the scene tilts with the mouse and the flare's
+      // ghosts slide across it (eased; back to centre once they tap)
       if (phaseRef.current !== "world" && !reduceMotion) {
         const at = phaseRef.current === "portal";
         px += ((at ? mouse.current.x : 0) - px) * TILT_EASE;
         py += ((at ? mouse.current.y : 0) - py) * TILT_EASE;
-        for (const k in PORTAL_SHIFT) {
-          const el = portalShiftRefs.current[k];
-          if (el) el.style.transform = `translate3d(${(px * PORTAL_SHIFT[k][0]).toFixed(1)}px, ${(py * PORTAL_SHIFT[k][1]).toFixed(1)}px, 0)`;
-        }
+        const { loop, flare } = portalShiftRefs.current;
+        if (loop) loop.style.transform = `perspective(1400px) rotateY(${(px * PORTAL_TILT_DEG[0]).toFixed(3)}deg) rotateX(${(-py * PORTAL_TILT_DEG[1]).toFixed(3)}deg) translate3d(${(px * 6).toFixed(1)}px, ${(py * 4).toFixed(1)}px, 0)`;
+        if (flare) flare.style.transform = `translate3d(${(px * FLARE_SHIFT[0]).toFixed(1)}px, ${(py * FLARE_SHIFT[1]).toFixed(1)}px, 0)`;
       }
 
       const live = phaseRef.current === "world";
@@ -882,7 +879,7 @@ export const DesktopWorld = () => {
         }}
       >
         {/* the frame, drawn at the same size as the transition and the world
-            so the handoff lines up: the loop, the sky's colour, then Burnell */}
+            so the handoff lines up: the loop, then the sky's colour */}
         <div
           className="absolute left-1/2 top-1/2"
           style={{ width: "max(100vw, 177.78vh)", height: "max(100vh, 56.25vw)", transform: `translate(-50%, -50%) scale(${OVERSCAN})` }}
@@ -904,14 +901,6 @@ export const DesktopWorld = () => {
           </div>
           <div aria-hidden className="absolute inset-0" style={{ background: SKY_TINT, mixBlendMode: "soft-light" }} />
           <div aria-hidden className="absolute inset-0" style={{ background: SKY_GLOW }} />
-          <img
-            ref={(el) => (portalShiftRefs.current.burnell = el)}
-            src={PORTAL_BURNELL}
-            alt={ARTIST_NAME}
-            data-testid="desktop-portal-burnell"
-            className="absolute select-none"
-            style={{ left: `${BURNELL_BOX.left * 100}%`, top: `${BURNELL_BOX.top * 100}%`, width: `${BURNELL_BOX.width * 100}%` }}
-          />
         </div>
         {/* lens flare from the sun, top right, where he's looking: a soft
             bloom, a streak, and ghosts that slide across with the mouse */}
