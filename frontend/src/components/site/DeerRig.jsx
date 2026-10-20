@@ -205,7 +205,7 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
               <div key={h.key} ref={(el) => (headRefs.current[i] = el)} className="absolute inset-0" style={{ opacity: 0, visibility: "hidden" }}>
                 <div className="absolute" style={{ left: `${h.box[0]}%`, top: `${h.box[1]}%`, width: `${h.box[2]}%` }}>
                   <img src={load ? P(`head-${h.key}`) : undefined} alt="" className="block w-full max-w-none" />
-                  <img src={load ? P(`antlers-${h.key}-glow`) : undefined} alt="" aria-hidden className="deer-antler-glow absolute inset-0 h-full w-full" />
+                  <img src={load ? `${P(`antlers-${h.key}-glow`)}?v=2` : undefined} alt="" aria-hidden className="deer-antler-glow absolute inset-0 h-full w-full" />
                 </div>
                 <Motes tips={h.tips} />
               </div>
@@ -215,7 +215,7 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
               <div key={h.key} ref={(el) => (headRefs.current[i] = el)} className="absolute inset-0">
                 <div ref={sideRef} className="absolute inset-0" style={{ transformOrigin: "74% 27.5%" }}>
                   <img src={load ? P("head") : undefined} alt="" className="absolute inset-0 h-full w-full" />
-                  <img src={load ? P("antlers-glow") : undefined} alt="" aria-hidden className="deer-antler-glow absolute inset-0 h-full w-full" />
+                  <img src={load ? `${P("antlers-glow")}?v=2` : undefined} alt="" aria-hidden className="deer-antler-glow absolute inset-0 h-full w-full" />
                   <Motes tips={h.tips} />
                   <img src={load ? P("ear") : undefined} alt="" className="deer-ear absolute inset-0 h-full w-full" />
                 </div>
