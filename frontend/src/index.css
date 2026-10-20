@@ -872,7 +872,16 @@ html.intro-playing [data-testid="site-navbar"] { opacity: 0; }
   animation: deer-aura-spin 80s linear infinite reverse;
 }
 @keyframes deer-aura-spin { to { transform: rotate(360deg); } }
-@keyframes deer-aura-breathe { 0%, 100% { opacity: 0.32; } 50% { opacity: 0.5; } }
+@keyframes deer-aura-breathe { 0%, 100% { opacity: 0.38; } 50% { opacity: 0.6; } }
+@keyframes deer-aura-breathe-hover { 0%, 100% { opacity: 0.46; } 50% { opacity: 0.73; } }
+.deer-rig.is-hover .deer-aura-rainbow:not(.deer-aura-burst) { animation-name: deer-aura-spin, deer-aura-breathe-hover; }
+/* a tap or click: the rainbow bursts outward */
+.deer-aura-burst { opacity: 0; animation: none; will-change: transform, opacity; }
+.deer-aura-burst.is-bursting { animation: deer-aura-burst 1.4s cubic-bezier(0.15, 0.6, 0.3, 1) forwards; }
+@keyframes deer-aura-burst {
+  0% { transform: scale(0.7); opacity: 0.8; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
 /* the outline pulsing out: a soft gold copy of the deer's silhouette that
    grows from its edges and fades into the world */
 .deer-pulse {

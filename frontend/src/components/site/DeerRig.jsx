@@ -91,6 +91,7 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
   const rootRef = useRef(null);
   const headRefs = useRef([]);
   const sideRef = useRef(null);
+  const burstRef = useRef(null);
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -117,6 +118,13 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
       if (!over(x, y, 30)) return;
       const now = performance.now();
       if (now - tapAt > TAP_S * 1000) tapAt = now; // a tap mid-turn lets it finish
+      // the rainbow bursts outward (restarted on every tap)
+      const b = burstRef.current;
+      if (b && !reduce) {
+        b.classList.remove("is-bursting");
+        void b.offsetWidth;
+        b.classList.add("is-bursting");
+      }
     };
     const onDown = (e) => hit(e.clientX, e.clientY);
     const onTouch = (e) => e.touches[0] && hit(e.touches[0].clientX, e.touches[0].clientY);
@@ -177,6 +185,7 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
           Flower of Life, fading into the world */}
       <div aria-hidden className="deer-aura pointer-events-none absolute" style={{ left: "-40%", top: "-28%", width: "180%", height: "125.6%" }}>
         <div className="deer-aura-rainbow absolute inset-0" />
+        <div ref={burstRef} className="deer-aura-rainbow deer-aura-burst absolute inset-0" />
         <svg className="deer-aura-geometry absolute inset-0 h-full w-full" viewBox="-60 -60 120 120" preserveAspectRatio="xMidYMid meet">
           <g fill="none" stroke="rgba(255,232,180,1)" strokeWidth="0.3">
             {FLOWER.map(([x, y], i) => (
