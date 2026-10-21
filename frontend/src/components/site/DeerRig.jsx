@@ -186,13 +186,18 @@ export const DeerRig = ({ refFn, load, onLoad }) => {
       <div aria-hidden className="deer-aura pointer-events-none absolute" style={{ left: "-40%", top: "-28%", width: "180%", height: "125.6%" }}>
         <div className="deer-aura-rainbow absolute inset-0" />
         <div ref={burstRef} className="deer-aura-rainbow deer-aura-burst absolute inset-0" />
-        <svg className="deer-aura-geometry absolute inset-0 h-full w-full" viewBox="-60 -60 120 120" preserveAspectRatio="xMidYMid meet">
-          <g fill="none" stroke="rgba(255,232,180,1)" strokeWidth="0.3">
-            {FLOWER.map(([x, y], i) => (
-              <circle key={i} r="10" cx={x} cy={y} />
-            ))}
-          </g>
-        </svg>
+        {/* the mask sits on a wrapper (iPhone Safari won't mask an <svg>
+            directly), and the lines keep a fixed width however small the deer
+            is on screen, so they don't vanish on a phone */}
+        <div className="deer-aura-geometry absolute inset-0">
+          <svg className="absolute inset-0 h-full w-full" viewBox="-60 -60 120 120" preserveAspectRatio="xMidYMid meet">
+            <g fill="none" stroke="rgba(255,232,180,1)" strokeWidth="0.9" vectorEffect="non-scaling-stroke">
+              {FLOWER.map(([x, y], i) => (
+                <circle key={i} r="10" cx={x} cy={y} vectorEffect="non-scaling-stroke" />
+              ))}
+            </g>
+          </svg>
+        </div>
       </div>
       {/* its golden outline, pulsing out into the world */}
       {load && (
