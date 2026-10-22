@@ -4,7 +4,7 @@ import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
 import { Reveal } from "@/components/site/Reveal";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { SOCIALS, LAYLO_URL, TEXT_LIST_LINK_PROPS, ARTIST_NAME, COMMUNITY_OFFERS } from "@/data/site";
+import { SOCIALS, LAYLO_URL, TEXT_LIST_ON, TEXT_LIST_LINK_PROPS, ARTIST_NAME, COMMUNITY_OFFERS } from "@/data/site";
 
 // Repurposed as the dedicated text-list signup landing page — this is where
 // "join her world" lives (the About page's "Join the Family" button routes
@@ -25,10 +25,13 @@ export default function Community() {
       const img = photoRef.current;
       const box = boxRef.current;
       const cards = cardsRef.current;
-      if (!img || !box || !cards) return;
+      if (!img || !cards) return;
       const W = window.innerWidth;
       const H = window.innerHeight;
-      const target = (box.getBoundingClientRect().bottom + cards.getBoundingClientRect().top) / 2;
+      const cardsTop = cards.getBoundingClientRect().top;
+      // between the sign-up box and the cards, or just above the cards
+      // while the sign-up box is hidden (no text-list link yet)
+      const target = box ? (box.getBoundingClientRect().bottom + cardsTop) / 2 : cardsTop - 40;
       let k = Math.max(W / 960, H / 720);
       // face lower than the photo allows: grow it until it reaches
       if (430 * k < target) k = target / 430;
@@ -106,7 +109,7 @@ export default function Community() {
         {/* Stretched horizontally instead of vertically (wide, short) so it
             reveals more of the blonde woman's head in the background crowd
             photo behind it. Copy condensed to 2 lines max at this width;
-            routes to the site's own /connect text-list page rather than
+            routes to his text-list link (Laylo) rather than
             a native form.
 
             Rendered directly (no Reveal-driven transform/opacity animation)
@@ -119,7 +122,10 @@ export default function Community() {
             The soft pulsing glow (animate-glow-pulse) is applied directly
             to this box, for the same reason — it must be animating from
             the very first frame with no delayed entrance, so it can't live
-            behind a Reveal-gated fade-in either. */}
+            behind a Reveal-gated fade-in either.
+
+            Hidden until the text-list link (his Laylo) is set. */}
+        {TEXT_LIST_ON && (
         <div
           ref={boxRef}
           className={`animate-glow-pulse mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-6 rounded-xl border border-[var(--sm-gold)]/25 bg-black/45 px-8 py-4 backdrop-blur-sm ${
@@ -138,6 +144,7 @@ export default function Community() {
             Join the Family <ArrowUpRight size={15} />
           </a>
         </div>
+        )}
 
         {/* Offerings — form: Patreon, low-barrier offer (greatest hits /
             beat packs), Quantum Visions. Cards without a link yet render as

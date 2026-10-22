@@ -58,9 +58,11 @@ export const HERO_TAGLINE = SITE_TAGLINE;
 
 export const SOCIALS = links.socials;
 
-// The text-list signup. Every text-list button routes here: /connect, the
-// site's own sign-up page (or an outside link, if one is ever set instead).
+// The text-list signup. Every text-list button routes here: his Laylo page
+// once it exists. While the link is empty the buttons are hidden and /connect
+// (the site's own sign-up page, waiting on ENTREE's backend) is dormant.
 export const LAYLO_URL = links.textList.url;
+export const TEXT_LIST_ON = !!LAYLO_URL && LAYLO_URL !== "/connect";
 export const LEADMAGNET_DESCRIPTION = links.textList.leadMagnet;
 // Our own page opens in place; an outside link opens in a new tab.
 export const TEXT_LIST_LINK_PROPS = LAYLO_URL.startsWith("/") ? {} : { target: "_blank", rel: "noopener noreferrer" };

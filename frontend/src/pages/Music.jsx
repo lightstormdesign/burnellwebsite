@@ -13,6 +13,7 @@ import {
   FEATURED_VIDEO,
   LEADMAGNET_DESCRIPTION,
   LAYLO_URL,
+  TEXT_LIST_ON,
   TEXT_LIST_LINK_PROPS,
   ARTIST_NAME,
 } from "@/data/site";
@@ -150,7 +151,9 @@ export default function Music() {
               )}
 
               {/* Lead-magnet card — form: fans receive "new unreleased song
-                  & bts content" for joining the text list. */}
+                  & bts content" for joining the text list. Hidden until the
+                  text-list link (his Laylo) is set. */}
+              {TEXT_LIST_ON && (
               <div className="animate-glow-pulse mt-8 flex flex-1 flex-col items-center justify-center rounded-xl border border-[var(--sm-gold)]/25 px-6 py-10 text-center">
                 <img src="/burnell-emblem.png" alt="" aria-hidden className="h-12 w-auto opacity-90" />
                 <p className="font-display mt-5 text-xl text-white">Hear it before anyone else</p>
@@ -164,6 +167,7 @@ export default function Music() {
                   Send it to me <ArrowUpRight size={15} />
                 </a>
               </div>
+              )}
             </div>
 
             <div className="lg:pl-10">

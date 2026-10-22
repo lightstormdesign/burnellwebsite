@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Home from "@/pages/Home";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { LAYLO_URL, TEXT_LIST_ON } from "@/data/site";
 
 // Home ships in the main bundle; every other page loads on its own, and is
 // fetched in the background once Home has had the connection to itself.
@@ -14,7 +15,6 @@ const PAGES = {
   tour: () => import("@/pages/Tour"),
   community: () => import("@/pages/Community"),
   onlyHueman: () => import("@/pages/OnlyHueman"),
-  connect: () => import("@/pages/Connect"),
 };
 const About = lazy(PAGES.about);
 const EPK = lazy(PAGES.epk);
@@ -23,7 +23,6 @@ const Music = lazy(PAGES.music);
 const Tour = lazy(PAGES.tour);
 const Community = lazy(PAGES.community);
 const OnlyHueman = lazy(PAGES.onlyHueman);
-const Connect = lazy(PAGES.connect);
 // The site editor (/admin): its own screen, none of the site's effects.
 const AdminApp = lazy(() => import("@/admin/AdminApp"));
 const PREFETCH_DELAY_MS = 8000;
@@ -38,6 +37,18 @@ import { SacredGeometryField } from "@/components/site/SacredGeometryField";
 function AboutRoute() {
   const isMobile = useIsMobile();
   return isMobile ? <Navigate to="/#story" replace /> : <About />;
+}
+
+// /connect is dormant until ENTREE's backend can take sign-ups (the page
+// itself is kept in src/pages/Connect.jsx). Old links go to his text-list
+// link (Laylo) once it's set, or home until then.
+function ConnectRoute() {
+  const external = TEXT_LIST_ON && !LAYLO_URL.startsWith("/");
+  useEffect(() => {
+    if (external) window.location.replace(LAYLO_URL);
+  }, [external]);
+  if (external) return null;
+  return <Navigate to={TEXT_LIST_ON ? LAYLO_URL : "/"} replace />;
 }
 
 function ScrollToTop() {
@@ -83,7 +94,7 @@ function Site() {
           <Route path="/tour" element={<Tour />} />
           <Route path="/community" element={<Community />} />
           <Route path="/only-hueman" element={<OnlyHueman />} />
-          <Route path="/connect" element={<Connect />} />
+          <Route path="/connect" element={<ConnectRoute />} />
         </Routes>
       </Suspense>
     </>
