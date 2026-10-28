@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Route, Routes, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Check, ChevronRight, ExternalLink, Github, Loader2, LogOut } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, ExternalLink, Github, Loader2, LogOut, Users } from "lucide-react";
 import { PAGES, SITE } from "./schema";
+import Signups from "./Signups";
 import { Fields, UploadContext } from "./Fields";
 import { UPLOADS_PUBLIC, clearToken, getToken, prepareFile, prepareImage, publishPage, readPage, whoAmI } from "./github";
 
@@ -44,6 +45,14 @@ export default function AdminApp() {
       ) : (
         <Routes>
           <Route index element={<Dashboard me={me} onSignOut={signOut} />} />
+          <Route
+            path="signups"
+            element={
+              <Shell me={me} onSignOut={signOut}>
+                <Signups />
+              </Shell>
+            }
+          />
           <Route path=":file" element={<Editor me={me} onSignOut={signOut} />} />
         </Routes>
       )}
@@ -96,6 +105,17 @@ function Dashboard({ me, onSignOut }) {
     <Shell me={me} onSignOut={onSignOut}>
       <h1 className="mt-8 font-display text-3xl">Edit your website</h1>
       <p className="mt-2 text-[0.95rem] text-white/50">Pick a page, make your changes, then tap Publish. It's live about a minute later.</p>
+      <Link
+        to="/admin/signups"
+        className="mt-8 flex items-center gap-4 rounded-2xl border border-[var(--sm-gold)]/30 bg-[var(--sm-gold)]/[0.06] px-5 py-4 transition hover:border-[var(--sm-gold)]/60"
+      >
+        <Users size={22} className="shrink-0 text-[var(--sm-gold)]" />
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-lg">Sign-ups</p>
+          <p className="mt-0.5 truncate text-sm text-white/45">Your text list: everyone who signed up, with CSV export</p>
+        </div>
+        <ChevronRight size={20} className="shrink-0 text-[var(--sm-gold)]" />
+      </Link>
       <div className="mt-8 space-y-2.5">
         {PAGES.map((p) => (
           <Link

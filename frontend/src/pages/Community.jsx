@@ -1,19 +1,22 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
 import { Reveal } from "@/components/site/Reveal";
+import SignupForm, { SignupThanks } from "@/components/site/SignupForm";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { SOCIALS, LAYLO_URL, TEXT_LIST_ON, TEXT_LIST_LINK_PROPS, ARTIST_NAME, COMMUNITY_OFFERS } from "@/data/site";
+import { SOCIALS, SIGNUP, COMMUNITY_OFFERS } from "@/data/site";
 
-// Repurposed as the dedicated text-list signup landing page — this is where
-// "join her world" lives (the About page's "Join the Family" button routes
-// here). Stats/performance numbers live only on the EPK page, not here.
+// Community: his text list (an embedded sign-up form, saved with the site's
+// other forms in /admin → Sign-ups) and the offers. Stats/performance
+// numbers live only on the EPK page, not here.
 export default function Community() {
   const isMobile = useIsMobile();
   const photoRef = useRef(null);
   const boxRef = useRef(null);
   const cardsRef = useRef(null);
+  const [joined, setJoined] = useState(false);
+  const c = SIGNUP.community;
 
   // Computers: size and place the crowd photo so Burnell's face (kneeling,
   // brown hat) sits in the gap between the sign-up box and the offer cards,
@@ -29,8 +32,7 @@ export default function Community() {
       const W = window.innerWidth;
       const H = window.innerHeight;
       const cardsTop = cards.getBoundingClientRect().top;
-      // between the sign-up box and the cards, or just above the cards
-      // while the sign-up box is hidden (no text-list link yet)
+      // between the sign-up box and the cards
       const target = box ? (box.getBoundingClientRect().bottom + cardsTop) / 2 : cardsTop - 40;
       let k = Math.max(W / 960, H / 720);
       // face lower than the photo allows: grow it until it reaches
@@ -106,45 +108,35 @@ export default function Community() {
           </h1>
         </Reveal>
 
-        {/* Stretched horizontally instead of vertically (wide, short) so it
-            reveals more of the blonde woman's head in the background crowd
-            photo behind it. Copy condensed to 2 lines max at this width;
-            routes to his text-list link (Laylo) rather than
-            a native form.
-
-            Rendered directly (no Reveal-driven transform/opacity animation)
-            — backdrop-blur-sm on this box was getting visibly delayed by a
-            couple of seconds, which traced back to browsers not compositing
-            backdrop-filter correctly while an ancestor's `transform` is
-            actively animating (Reveal's translateY fade-in). Present from
-            the very first frame is more reliable than fighting that.
-
-            The soft pulsing glow (animate-glow-pulse) is applied directly
-            to this box, for the same reason — it must be animating from
-            the very first frame with no delayed entrance, so it can't live
-            behind a Reveal-gated fade-in either.
-
-            Hidden until the text-list link (his Laylo) is set. */}
-        {TEXT_LIST_ON && (
+        {/* The text-list sign-up. Rendered directly (no Reveal-driven
+            transform/opacity animation): browsers delay backdrop-blur on a
+            box while an ancestor's transform is animating. */}
         <div
           ref={boxRef}
-          className={`animate-glow-pulse mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-6 rounded-xl border border-[var(--sm-gold)]/25 bg-black/45 px-8 py-4 backdrop-blur-sm ${
+          data-testid="community-signup"
+          className={`animate-glow-pulse mx-auto max-w-2xl rounded-xl border border-[var(--sm-gold)]/25 bg-black/45 px-6 py-5 backdrop-blur-sm sm:px-8 ${
             isMobile ? "mt-6" : "mt-10"
           }`}
         >
-          <p className="font-body max-w-sm text-left text-sm font-light text-white/70">
-            Get texts from {ARTIST_NAME.split(" ")[0]} — an unreleased song, behind-the-scenes content, new music, and show dates.
-          </p>
-          <a
-            href={LAYLO_URL}
-            {...TEXT_LIST_LINK_PROPS}
-            data-testid="community-signup-laylo-link"
-            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[var(--sm-gold)] px-6 py-2.5 font-body text-sm font-medium text-black transition-colors hover:bg-[var(--sm-gold-light)]"
-          >
-            Join the Family <ArrowUpRight size={15} />
-          </a>
+          {joined ? (
+            <SignupThanks small headline={c.thanksHeadline} text={c.thanksText} />
+          ) : (
+            <div className="grid gap-5 text-left sm:grid-cols-[1fr_1.25fr] sm:items-start">
+              <div>
+                <p className="font-display text-xl text-white">{c.headline}</p>
+                <ul className="mt-3 space-y-1.5">
+                  {c.benefits.map((b) => (
+                    <li key={b} className="font-body flex gap-2 text-sm font-light text-white/70">
+                      <span aria-hidden className="text-[var(--sm-gold)]">✦</span>
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <SignupForm form="community" buttonText={c.buttonText} onDone={() => setJoined(true)} />
+            </div>
+          )}
         </div>
-        )}
 
         {/* Offerings — form: Patreon, low-barrier offer (greatest hits /
             beat packs), Quantum Visions. Cards without a link yet render as

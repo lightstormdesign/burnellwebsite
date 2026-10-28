@@ -1,0 +1,29 @@
+{
+  "story": {
+    "line": "New music and shows near you, straight to your phone.",
+    "buttonText": "I'm In",
+    "thanksHeadline": "You're in the family.",
+    "thanksText": "Talk soon."
+  },
+  "community": {
+    "headline": "Join the Soul Fam text list",
+    "benefits": [
+      "First to hear new music",
+      "Early word on shows near you",
+      "Behind the scenes, from the studio and the road"
+    ],
+    "buttonText": "Join the Family",
+    "thanksHeadline": "Welcome to the family.",
+    "thanksText": "Watch your phone. You'll hear from me first."
+  },
+  "connect": {
+    "kicker": "Free for the family",
+    "headline": "Get my unreleased song, free",
+    "subheadline": "Join my text list and I'll send you a brand-new song nobody else has heard yet. Plus first word on new music and shows near you.",
+    "buttonText": "Send Me the Song",
+    "thanksHeadline": "You're in the family.",
+    "thanksText": "Here it is, before anyone else.",
+    "rewardLabel": "Listen Now",
+    "rewardUrl": ""
+  }
+}

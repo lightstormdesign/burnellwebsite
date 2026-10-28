@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AnnouncementBubble } from "@/components/site/AnnouncementBubble";
 import { PortalFlower } from "@/components/site/PortalFlower";
 import { DeerRig } from "@/components/site/DeerRig";
+import { StorySignup } from "@/components/site/SignupForm";
 import { WorldProgress } from "@/components/site/WorldProgress";
 import { ChevronDown, Volume2, VolumeOff } from "lucide-react";
 import { useTilt } from "@/hooks/useTilt";
@@ -351,19 +352,12 @@ const Chapter = ({ s, load }) => {
     return (
       <div className="relative flex flex-col items-center px-8 text-center">
         <div aria-hidden className="absolute left-1/2 top-1/2 -z-10 h-[150%] w-[140%] -translate-x-1/2 -translate-y-1/2" style={{ background: TEXT_POOL, filter: "blur(16px)" }} />
-        <img src="/burnell-emblem.png" alt="" aria-hidden className="h-14 w-auto opacity-90" />
-        <h2 className="font-display mt-7 text-3xl leading-tight text-white text-legible">
+        <img src="/burnell-emblem.png" alt="" aria-hidden className="h-10 w-auto opacity-90" />
+        <h2 className="font-display mt-5 text-3xl leading-tight text-white text-legible">
           If you feel it, <span className="text-gold-grad">you’re already soul fam.</span>
         </h2>
-        <div className="mt-9 flex flex-col items-center gap-4">
-          <Link to="/community" className="rounded-full bg-[var(--sm-gold)] px-8 py-3.5 font-body text-sm font-medium text-black">
-            Join the Family
-          </Link>
-          <Link to="/music" className="font-accent text-xs uppercase tracking-[0.28em] text-[var(--sm-gold-light)]">
-            Hear the music
-          </Link>
-        </div>
-        <p className="font-display mt-10 text-lg text-white text-legible">— {ARTIST_NAME}</p>
+        <StorySignup />
+        <p className="font-display mt-6 text-lg text-white text-legible">— {ARTIST_NAME}</p>
       </div>
     );
   }
@@ -1004,7 +998,9 @@ export const WorldHome = () => {
           chapterRefs.current.forEach((el, i) => {
             if (!el) return;
             const d = Math.abs(q - (i + 1));
-            const o = d <= 0.22 ? 1 : d >= 0.5 ? 0 : (0.5 - d) / 0.28;
+            // typing in the closing sign-up: it stays up even if the
+            // keyboard opening scrolls the page
+            const o = el.contains(document.activeElement) || d <= 0.22 ? 1 : d >= 0.5 ? 0 : (0.5 - d) / 0.28;
             el.style.opacity = o.toFixed(3);
             el.style.pointerEvents = o > 0.6 ? "auto" : "none";
             el.style.transform = `translateY(${((q - (i + 1)) * -24).toFixed(1)}px)`;

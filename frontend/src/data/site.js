@@ -8,6 +8,7 @@
 import home from "@/content/home.json";
 import release from "@/content/release.json";
 import story from "@/content/story.json";
+import signup from "@/content/signup.json";
 import tour from "@/content/tour.json";
 import music from "@/content/music.json";
 import epk from "@/content/epk.json";
@@ -62,6 +63,9 @@ export const SOCIALS = links.socials;
 // the site's own sign-up page (the list is kept in ENTREE's admin), or an
 // outside link such as Laylo. While it's empty the buttons are hidden.
 export const LAYLO_URL = links.textList.url;
+// The words on the site's own sign-up forms (end of the story, Community,
+// /connect); every one saves to the list in /admin → Sign-ups.
+export const SIGNUP = signup;
 export const TEXT_LIST_ON = !!LAYLO_URL;
 export const LEADMAGNET_DESCRIPTION = links.textList.leadMagnet;
 // Our own page opens in place; an outside link opens in a new tab.

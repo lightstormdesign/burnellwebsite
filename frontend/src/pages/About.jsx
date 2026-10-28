@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { StorySignup } from "@/components/site/SignupForm";
 import { ChevronDown } from "lucide-react";
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
@@ -289,14 +289,8 @@ export default function About() {
                     <h2 className="font-display mt-8 max-w-xl text-3xl font-normal leading-tight text-white sm:text-4xl text-legible">
                       If you feel it, <span className="text-gold-grad">you’re already soul fam.</span>
                     </h2>
-                    <Link
-                      to="/community"
-                      data-testid="about-cta"
-                      className="mt-9 inline-flex rounded-full bg-[var(--sm-gold)] px-8 py-3.5 font-body text-sm font-medium text-black transition-colors hover:bg-[var(--sm-gold-light)]"
-                    >
-                      Join the Family
-                    </Link>
-                    <p className="font-display mt-10 text-lg font-normal text-white text-legible">— {ARTIST_NAME}</p>
+                    <StorySignup wide={!isMobile} />
+                    <p className="font-display mt-8 text-lg font-normal text-white text-legible">— {ARTIST_NAME}</p>
                   </div>
                 </div>
               );

@@ -1,81 +1,55 @@
-// Fan text-list sign-up from /connect, passed on to ENTREE's backend, which
-// keeps the list (and each fan's consent record) for LightStorm's admin.
-// GET returns the page's current offer (headline, button…), which is
-// edited in that admin; POST signs the fan up and returns what they get.
-// Going through this site's own server means no cross-site setup on the
-// backend, and the fan's real address reaches it as X-Forwarded-For. Needs
-// ENTREE_API_URL set in Vercel (the backend's base URL, no trailing /api).
-const ARTIST = "burnell";
+// Fan text-list sign-ups from every form on the site (the end of the story,
+// Community and /connect). Saved in this site's own storage (see _fans.js)
+// and listed in /admin → Sign-ups. Signing up again updates the same fan
+// (newest consent wins) and adds the new form to where they signed up.
+const { ready, getFan, saveFan } = require("./_fans");
+
+const FORMS = ["story", "community", "connect"];
+
+const send = (res, status, body) => {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Cache-Control", "no-store");
+  res.end(JSON.stringify(body));
+};
 
 module.exports = async (req, res) => {
-  res.setHeader("Content-Type", "application/json");
-  if (req.method !== "POST" && req.method !== "GET") {
-    res.statusCode = 405;
-    res.end(JSON.stringify({ error: "GET or POST only" }));
-    return;
-  }
-  const base = (process.env.ENTREE_API_URL || "").replace(/\/+$/, "");
-  if (req.method === "GET") {
-    // No backend (or it's down): the page falls back to its own copy.
-    try {
-      const r = base ? await fetch(`${base}/api/fan-offer/${ARTIST}`) : null;
-      if (!r || !r.ok) throw new Error();
-      // Short shared cache: edits show up within a minute.
-      res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
-      res.end(JSON.stringify(await r.json()));
-    } catch {
-      res.statusCode = 503;
-      res.end(JSON.stringify({ error: "unavailable" }));
-    }
-    return;
-  }
-  if (!base) {
-    res.statusCode = 503;
-    res.end(JSON.stringify({ error: "Sign-ups aren't switched on yet. Please try again soon." }));
-    return;
-  }
+  if (req.method !== "POST") return send(res, 405, { error: "POST only" });
+  if (!ready()) return send(res, 503, { error: "Sign-ups aren't switched on yet. Please try again soon." });
   const b = req.body && typeof req.body === "object" ? req.body : {};
+  // a field people never see: only bots fill it in, and they get a quiet "ok"
+  if (b.website) return send(res, 200, { ok: true });
   const str = (v, max) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
-  const body = {
-    artist: ARTIST,
-    phone: str(b.phone, 30) || "",
-    name: str(b.name, 100),
-    email: str(b.email, 254),
-    city: str(b.city, 100),
-    sms: b.sms === true,
-    consent_text: str(b.consent_text, 1000),
-    page: str(b.page, 300),
-  };
+
+  let phone = String(b.phone || "").replace(/\D/g, "");
+  if (phone.length === 10) phone = `1${phone}`; // a US number without the country code
+  if (phone.length < 11 || phone.length > 15) return send(res, 400, { error: "Enter your phone number with area code." });
+  if (b.sms !== true) return send(res, 400, { error: "Tick the box to join the text list." });
+  const email = str(b.email, 254);
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return send(res, 400, { error: "Check your email address, or leave it empty." });
+  const form = FORMS.includes(b.form) ? b.form : "connect";
+
   try {
-    const r = await fetch(`${base}/api/fan-connect`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Forwarded-For": String(req.headers["x-forwarded-for"] || "").split(",")[0].trim(),
-        "User-Agent": String(req.headers["user-agent"] || "").slice(0, 300),
-      },
-      body: JSON.stringify(body),
+    const prev = (await getFan(phone)) || {};
+    const now = new Date().toISOString();
+    await saveFan({
+      phone,
+      name: str(b.name, 100) || prev.name || null,
+      email: email || prev.email || null,
+      city: str(b.city, 100) || prev.city || null,
+      forms: [...new Set([...(prev.forms || []), form])],
+      // their consent record: the exact words they agreed to, when and where
+      consent_text: str(b.consent_text, 1000),
+      consent_at: now,
+      page: str(b.page, 300),
+      ip: String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || null,
+      user_agent: String(req.headers["user-agent"] || "").slice(0, 300) || null,
+      created_at: prev.created_at || now,
+      updated_at: now,
     });
-    if (r.ok) {
-      const d = await r.json().catch(() => ({}));
-      const pick = (k) => (typeof d[k] === "string" ? d[k] : null);
-      res.end(
-        JSON.stringify({
-          ok: true,
-          thanks_headline: pick("thanks_headline"),
-          thanks_text: pick("thanks_text"),
-          reward_label: pick("reward_label"),
-          reward_url: pick("reward_url"),
-        })
-      );
-      return;
-    }
-    const data = await r.json().catch(() => ({}));
-    const detail = typeof data.detail === "string" ? data.detail : "";
-    res.statusCode = r.status === 400 || r.status === 422 ? 400 : 502;
-    res.end(JSON.stringify({ error: detail || (res.statusCode === 400 ? "Check your number and email, then try again." : "Something went wrong. Please try again.") }));
-  } catch {
-    res.statusCode = 502;
-    res.end(JSON.stringify({ error: "Something went wrong. Please try again." }));
+    send(res, 200, { ok: true });
+  } catch (e) {
+    console.error("sign-up failed", e);
+    send(res, 502, { error: "Something went wrong. Please try again." });
   }
 };
