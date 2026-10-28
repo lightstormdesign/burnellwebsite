@@ -222,7 +222,7 @@ export const PAGES = [
         label: "Text list",
         type: "group",
         fields: [
-          { key: "url", label: "Sign-up page", type: "url", hint: "Paste his Laylo link (https://laylo.com/…). Leave empty to hide the text-list buttons." },
+          { key: "url", label: "Sign-up page", type: "url", hint: "Type /connect to use the site's own sign-up page (fans are saved in the ENTREE admin, with CSV export), or paste a Laylo link. Leave empty to hide the text-list buttons." },
           { key: "leadMagnet", label: "What fans get for joining", type: "textarea" },
         ],
       },

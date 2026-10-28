@@ -15,6 +15,7 @@ const PAGES = {
   tour: () => import("@/pages/Tour"),
   community: () => import("@/pages/Community"),
   onlyHueman: () => import("@/pages/OnlyHueman"),
+  connect: () => import("@/pages/Connect"),
 };
 const About = lazy(PAGES.about);
 const EPK = lazy(PAGES.epk);
@@ -23,6 +24,7 @@ const Music = lazy(PAGES.music);
 const Tour = lazy(PAGES.tour);
 const Community = lazy(PAGES.community);
 const OnlyHueman = lazy(PAGES.onlyHueman);
+const Connect = lazy(PAGES.connect);
 // The site editor (/admin): its own screen, none of the site's effects.
 const AdminApp = lazy(() => import("@/admin/AdminApp"));
 const PREFETCH_DELAY_MS = 8000;
@@ -39,14 +41,16 @@ function AboutRoute() {
   return isMobile ? <Navigate to="/#story" replace /> : <About />;
 }
 
-// /connect is dormant until ENTREE's backend can take sign-ups (the page
-// itself is kept in src/pages/Connect.jsx). Old links go to his text-list
-// link (Laylo) once it's set, or home until then.
+// /connect is his own sign-up page when the text-list link is "/connect"
+// (the list is kept in ENTREE's admin). With an outside link (Laylo) old
+// /connect links go there instead, and home while the link is empty.
 function ConnectRoute() {
+  const own = LAYLO_URL === "/connect";
   const external = TEXT_LIST_ON && !LAYLO_URL.startsWith("/");
   useEffect(() => {
     if (external) window.location.replace(LAYLO_URL);
   }, [external]);
+  if (own) return <Connect />;
   if (external) return null;
   return <Navigate to={TEXT_LIST_ON ? LAYLO_URL : "/"} replace />;
 }
