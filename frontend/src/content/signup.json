@@ -1,6 +1,13 @@
 {
+  "popup": {
+    "headline": "Receive high-vibe texts",
+    "text": "Messages of inspiration from Burnell, weekly. Cancel anytime.",
+    "buttonText": "Yes, send them",
+    "thanksHeadline": "You're in.",
+    "thanksText": "Your first message of inspiration is on its way soon."
+  },
   "story": {
-    "line": "New music and shows near you, straight to your phone.",
+    "line": "High-vibe messages of inspiration every week, plus new music and shows near you.",
     "buttonText": "I'm In",
     "thanksHeadline": "You're in the family.",
     "thanksText": "Talk soon."
@@ -8,6 +15,7 @@
   "community": {
     "headline": "Join the Soul Fam text list",
     "benefits": [
+      "High-vibe messages of inspiration, every week",
       "First to hear new music",
       "Early word on shows near you",
       "Behind the scenes, from the studio and the road"
@@ -19,7 +27,7 @@
   "connect": {
     "kicker": "Free for the family",
     "headline": "Get my unreleased song, free",
-    "subheadline": "Join my text list and I'll send you a brand-new song nobody else has heard yet. Plus first word on new music and shows near you.",
+    "subheadline": "Join my text list for weekly high-vibe messages of inspiration, and I'll send you a brand-new song nobody else has heard yet. Plus first word on new music and shows near you.",
     "buttonText": "Send Me the Song",
     "thanksHeadline": "You're in the family.",
     "thanksText": "Here it is, before anyone else.",

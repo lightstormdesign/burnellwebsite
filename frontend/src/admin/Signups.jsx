@@ -8,7 +8,7 @@ import { getToken } from "./github";
 // site, newest first, with a CSV download (opens in Excel, Google Sheets,
 // or imports into a texting service). Comes from /api/fans, which checks
 // the same GitHub sign-in as the rest of the editor.
-const FORM_NAMES = { story: "End of story", community: "Community", connect: "Unreleased song" };
+const FORM_NAMES = { story: "End of story", community: "Community", connect: "Unreleased song", popup: "Pop-up" };
 
 const fmtPhone = (p) => {
   const m = /^1(\d{3})(\d{3})(\d{4})$/.exec(p || "");

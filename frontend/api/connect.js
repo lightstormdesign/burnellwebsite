@@ -1,10 +1,10 @@
 // Fan text-list sign-ups from every form on the site (the end of the story,
-// Community and /connect). Saved in this site's own storage (see _fans.js)
+// Community, /connect and the pop-up). Saved in this site's own storage (see _fans.js)
 // and listed in /admin → Sign-ups. Signing up again updates the same fan
 // (newest consent wins) and adds the new form to where they signed up.
 const { ready, getFan, saveFan } = require("./_fans");
 
-const FORMS = ["story", "community", "connect"];
+const FORMS = ["story", "community", "connect", "popup"];
 
 const send = (res, status, body) => {
   res.statusCode = status;

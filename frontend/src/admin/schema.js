@@ -247,6 +247,18 @@ export const PAGES = [
     blurb: "The words on the text-list forms (fans land in Sign-ups)",
     fields: [
       {
+        key: "popup",
+        label: "Pop-up (fades in after 15 seconds)",
+        type: "group",
+        fields: [
+          { key: "headline", label: "Headline", type: "text" },
+          { key: "text", label: "Line under it", type: "text" },
+          { key: "buttonText", label: "Button", type: "text" },
+          { key: "thanksHeadline", label: "Thank-you headline", type: "text" },
+          { key: "thanksText", label: "Thank-you line", type: "text" },
+        ],
+      },
+      {
         key: "story",
         label: "End of the story (home page)",
         type: "group",

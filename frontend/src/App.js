@@ -16,6 +16,7 @@ const PAGES = {
   community: () => import("@/pages/Community"),
   onlyHueman: () => import("@/pages/OnlyHueman"),
   connect: () => import("@/pages/Connect"),
+  privacy: () => import("@/pages/Privacy"),
 };
 const About = lazy(PAGES.about);
 const EPK = lazy(PAGES.epk);
@@ -25,10 +26,12 @@ const Tour = lazy(PAGES.tour);
 const Community = lazy(PAGES.community);
 const OnlyHueman = lazy(PAGES.onlyHueman);
 const Connect = lazy(PAGES.connect);
+const Privacy = lazy(PAGES.privacy);
 // The site editor (/admin): its own screen, none of the site's effects.
 const AdminApp = lazy(() => import("@/admin/AdminApp"));
 const PREFETCH_DELAY_MS = 8000;
 import { TrackingPixel } from "@/components/site/TrackingPixel";
+import SignupPopup from "@/components/site/SignupPopup";
 import { WaterCursor } from "@/components/site/WaterCursor";
 import { TouchRipples } from "@/components/site/TouchRipples";
 import { SacredGeometryField } from "@/components/site/SacredGeometryField";
@@ -88,6 +91,7 @@ function Site() {
       <SacredGeometryField />
       <WaterCursor />
       <TouchRipples />
+      <SignupPopup />
       <Suspense fallback={<div className="min-h-screen bg-black" />}>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -99,6 +103,7 @@ function Site() {
           <Route path="/community" element={<Community />} />
           <Route path="/only-hueman" element={<OnlyHueman />} />
           <Route path="/connect" element={<ConnectRoute />} />
+          <Route path="/privacy" element={<Privacy />} />
         </Routes>
       </Suspense>
     </>

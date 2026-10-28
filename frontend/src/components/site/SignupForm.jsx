@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { ARTIST_NAME, SIGNUP } from "@/data/site";
 
@@ -6,9 +7,12 @@ import { ARTIST_NAME, SIGNUP } from "@/data/site";
 // as their consent record, so if this ever changes, earlier fans still have
 // the version they actually saw. The box is never pre-checked.
 export const CONSENT_TEXT =
-  `Yes, text me about ${ARTIST_NAME}'s new music, shows and merch at the number above. ` +
-  "Up to 4 msgs/month. Msg & data rates may apply. Reply STOP to opt out, HELP for help. " +
-  "Consent is not a condition of any purchase. See the SMS privacy & terms below.";
+  `Yes, text me high-vibe messages of inspiration and news about ${ARTIST_NAME}'s music, shows and merch at the number above. ` +
+  "About 1 msg/week, up to 8 msgs/month. Msg & data rates may apply. Reply STOP to cancel, HELP for help. " +
+  "Consent is not a condition of any purchase. See the SMS terms and privacy policy below.";
+
+// Once someone has joined from any form, the pop-up never asks them again.
+export const JOINED_KEY = "bw-text-list";
 
 // 16px on phones: anything smaller and iPhone zooms the page in on focus
 const FIELD =
@@ -21,15 +25,22 @@ export const SmsTerms = ({ className = "" }) => (
     </summary>
     <div className="font-body mt-3 space-y-2.5 text-xs font-light leading-relaxed text-white/55">
       <p>
-        {ARTIST_NAME}'s text list sends updates about new music, shows and merch, up to 4 messages a month. Message and data rates may
-        apply. Reply STOP at any time to stop all messages, or HELP for help. Carriers are not liable for delayed or undelivered
-        messages.
+        {ARTIST_NAME}'s text list sends high-vibe messages of inspiration and news about new music, shows and merch: about one message
+        a week, up to 8 a month. Message and data rates may apply. Reply STOP at any time to cancel, or HELP for help. Carriers are not
+        liable for delayed or undelivered messages.
       </p>
       <p>
         Your number and details are used only to send you these messages. They are never sold, rented or shared with anyone for their
         own marketing. Mobile opt-in information is never shared with third parties.
       </p>
-      <p>To stop messages, reply STOP. For help or to remove your details, reply HELP or use the contact page on this site.</p>
+      <p>
+        To stop messages, reply STOP. For help or to remove your details, reply HELP or use the contact page on this site. Full details
+        are in the{" "}
+        <Link to="/privacy" className="underline decoration-white/30 underline-offset-2 hover:text-white">
+          privacy policy
+        </Link>
+        .
+      </p>
     </div>
   </details>
 );
@@ -58,6 +69,9 @@ export default function SignupForm({ form, full = false, buttonText, onDone, row
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Something went wrong. Please try again.");
+      try {
+        localStorage.setItem(JOINED_KEY, "joined");
+      } catch {}
       onDone?.();
     } catch (err) {
       setError(err.message);

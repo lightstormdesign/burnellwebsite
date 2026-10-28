@@ -39,7 +39,12 @@ export const Footer = () => {
 
         <MoonPhase />
 
-        <p className="font-body text-xs font-light text-white/35">© {new Date().getFullYear()} {ARTIST_NAME}. All rights reserved.</p>
+        <p className="font-body text-xs font-light text-white/35">
+          © {new Date().getFullYear()} {ARTIST_NAME}. All rights reserved. ·{" "}
+          <Link to="/privacy" className="hover:text-white/70">
+            Privacy Policy
+          </Link>
+        </p>
       </div>
     </footer>
   );
