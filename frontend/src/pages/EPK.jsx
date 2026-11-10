@@ -363,11 +363,15 @@ export default function EPK() {
           {/* No video here (his videos live on the Music page): the stats
               lead the info column. */}
           <Reveal delay={0.15}>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3">
+            {/* a heading that lines up with "Press Photos" across the way */}
+            <div className="mb-5 flex min-h-[2rem] items-center justify-center lg:justify-start">
+              <span className="overline">By the Numbers</span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-9 sm:grid-cols-4 lg:grid-cols-2">
               {EPK_STATS.map((s) => (
                 <div key={s.label}>
-                  <p className="font-display text-4xl text-[var(--sm-gold-light)]">{s.value}</p>
-                  <p className="font-body mt-1 text-[0.68rem] uppercase leading-snug tracking-[0.14em] text-white/60">{s.label}</p>
+                  <p className="font-display text-5xl leading-none text-[var(--sm-gold-light)]">{s.value}</p>
+                  <p className="font-body mt-3 text-[0.68rem] uppercase leading-snug tracking-[0.14em] text-white/65">{s.label}</p>
                   {s.note && <p className="font-body mt-1 text-[0.68rem] leading-snug text-white/40">{s.note}</p>}
                 </div>
               ))}
