@@ -189,6 +189,7 @@ export const PAGES = [
         fields: [
           { key: "value", label: "Number", type: "text", placeholder: "e.g. 15+" },
           { key: "label", label: "What it counts", type: "text", placeholder: "e.g. Years performing" },
+          { key: "note", label: "Small line under it", type: "text", placeholder: "e.g. Snoop Dogg, Mac Miller, Nas" },
         ],
       },
       names("sharedStages", "Shared the stage with", null, "Add artist"),

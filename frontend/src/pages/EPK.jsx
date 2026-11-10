@@ -363,15 +363,38 @@ export default function EPK() {
           {/* No video here (his videos live on the Music page): the stats
               lead the info column. */}
           <Reveal delay={0.15}>
-            <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 lg:grid-cols-2">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3">
               {EPK_STATS.map((s) => (
                 <div key={s.label}>
                   <p className="font-display text-4xl text-[var(--sm-gold-light)]">{s.value}</p>
-                  <p className="font-body mt-1 text-xs uppercase tracking-[0.15em] text-white/50">{s.label}</p>
+                  <p className="font-body mt-1 text-[0.68rem] uppercase leading-snug tracking-[0.14em] text-white/60">{s.label}</p>
+                  {s.note && <p className="font-body mt-1 text-[0.68rem] leading-snug text-white/40">{s.note}</p>}
                 </div>
               ))}
             </div>
           </Reveal>
+
+          {/* what the press has said, right under the numbers */}
+          {PRESS_QUOTES.length > 0 && (
+            <Reveal delay={0.17}>
+              <div data-testid="press-quotes" className="mt-12 space-y-7 border-l border-[var(--sm-gold)]/40 pl-5 text-left">
+                {PRESS_QUOTES.map((q) => (
+                  <figure key={q.quote}>
+                    <blockquote className="font-accent text-xl italic leading-snug text-white/90">“{q.quote}”</blockquote>
+                    <figcaption className="font-body mt-2 text-[0.68rem] uppercase tracking-[0.18em] text-[var(--sm-gold)]">
+                      {q.href ? (
+                        <a href={q.href} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--sm-gold-light)]">
+                          — {q.source}
+                        </a>
+                      ) : (
+                        <>— {q.source}</>
+                      )}
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+            </Reveal>
+          )}
 
           {/* Selected Performances — combined festival history + artists
               she's shared stages with, under one heading (industry-standard
@@ -397,24 +420,6 @@ export default function EPK() {
           <Reveal delay={0.22}>
             <div className="mt-10">
               <span className="overline">Press</span>
-              {PRESS_QUOTES.length > 0 && (
-                <div className="mt-5 space-y-6">
-                  {PRESS_QUOTES.map((q) => (
-                    <figure key={q.quote}>
-                      <blockquote className="font-accent text-lg italic leading-snug text-white/85">“{q.quote}”</blockquote>
-                      <figcaption className="font-body mt-1.5 text-xs uppercase tracking-[0.15em] text-white/45">
-                        {q.href ? (
-                          <a href={q.href} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--sm-gold-light)]">
-                            {q.source}
-                          </a>
-                        ) : (
-                          q.source
-                        )}
-                      </figcaption>
-                    </figure>
-                  ))}
-                </div>
-              )}
               <p className="font-body mt-4 text-sm leading-loose text-white/70">{PRESS_FEATURES.join(" · ")}</p>
               <ul className="mt-4 space-y-2">
                 {PRESS_LINKS.map((l) => (

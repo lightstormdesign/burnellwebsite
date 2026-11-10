@@ -106,9 +106,25 @@ export const EPK_TRACKS = [{ title: "I Love My Socks", src: "/burnell-i-love-my-
 // the cover: a square crop from his photoshoot (press photo 12)
 export const EPK_COVER = "/burnell-epk-song-cover.webp";
 
-// Quotes from articles and reviews, shown in the EPK's Press section once
-// there's at least one: { quote, source, href? }. PENDING: asked for any.
-export const PRESS_QUOTES = [];
+// Quotes from articles and reviews, shown under the EPK's stats:
+// { quote, source, href? }. Each one checked against the article.
+export const PRESS_QUOTES = [
+  {
+    quote: "Arguably the most high-profile hip-hop artist in the state.",
+    source: "The Salt Lake Tribune",
+    href: "https://archive.sltrib.com/article.php?id=56858218&itype=CMSID",
+  },
+  {
+    quote: "Underground local star… a soul-medicating compilation of indie production, urban storytelling and poetic positivity.",
+    source: "SLUG Magazine",
+    href: "https://www.slugmag.com/music/local-music-reviews/local-reviews-burnell-washburn/",
+  },
+  {
+    quote: "Resurrecting the genre locally, making new connections and cross-pollinating with national hip-hop stars.",
+    source: "Salt Lake City Weekly, cover story",
+    href: "https://www.cityweekly.net/news/paying-dues-2287210/",
+  },
+];
 
 // Stage plot & tech rider. A MOCKUP to confirm with Burnell: his press kit
 // doesn't cover his setup, so this is a typical conscious hip hop set: him

@@ -4,19 +4,33 @@
   "stats": [
     {
       "value": "1,000+",
-      "label": "Live Performances"
+      "label": "Live Performances",
+      "note": "Across the U.S."
     },
     {
-      "value": "2009",
-      "label": "Releasing Since"
+      "value": "25+",
+      "label": "Headliners Shared the Stage With",
+      "note": "Snoop Dogg, Mac Miller, Nas, Wu-Tang Clan"
+    },
+    {
+      "value": "15+",
+      "label": "Years Releasing Music",
+      "note": "First album in 2009"
+    },
+    {
+      "value": "12+",
+      "label": "Festivals",
+      "note": "Soundset, Reggae Rise Up, Element 11"
     },
     {
       "value": "3",
-      "label": "Magazine Covers"
+      "label": "Magazine Covers",
+      "note": "SLUG, City Weekly, QSaltLake"
     },
     {
-      "value": "Dozens",
-      "label": "Collaborations"
+      "value": "3",
+      "label": "Movements Founded",
+      "note": "Hip Hop Roots SLC, Wasatch Renaissance, Quantum Visionaries"
     }
   ],
   "sharedStages": [
@@ -27,6 +41,7 @@
     "Wiz Khalifa",
     "Wu-Tang Clan",
     "Nas",
+    "Wyclef Jean",
     "Atmosphere",
     "Brother Ali",
     "Lupe Fiasco",
@@ -87,6 +102,8 @@
     "SLUG Magazine (Cover)",
     "Salt Lake City Weekly (Cover)",
     "QSaltLake (Cover)",
+    "City Weekly Music Awards (2012 Nominee)",
+    "City Weekly Best of Utah (2016 Nominee, Hip-Hop/Rap)",
     "Salt Lake Tribune",
     "FOX 13 News",
     "Voyage Utah"
