@@ -234,6 +234,17 @@ const BookingForm = () => {
 export default function EPK() {
   return (
     <div className="starfield relative min-h-screen">
+      {/* Him, laughing in the canyon light, far back and very dark: on
+          computers set into the right side and fading into black toward the
+          title; on phones cropped tall, his face just under the menu bar.
+          Fixed, no filters (only opacity and a gradient over it). */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <picture>
+          <source media="(max-width: 767px)" srcSet="/burnell-epk-bg-tall.webp" />
+          <img src="/burnell-epk-bg-wide.webp" alt="" className="epk-bg-photo" />
+        </picture>
+        <div className="epk-bg-shade absolute inset-0" />
+      </div>
       <Navbar />
       <main className="relative mx-auto max-w-4xl px-6 pb-10 pt-40 text-center">
         {/* Header / info */}
