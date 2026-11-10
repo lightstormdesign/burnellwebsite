@@ -27,30 +27,17 @@ import {
   TECH_RIDER,
 } from "@/data/site";
 
-// Two source sets: EPK's own numbered photo set (mostly stage/performance
-// shots) and the general Gallery photos (mostly personal/candid) folded in
-// from the removed standalone Photos page. Kept as separate arrays here only
-// so they can be deliberately interleaved below — the previous pass had them
-// clustered as two visually separate blocks (all stage shots, then all
-// candid shots), which read as segmented rather than varied.
+// His EPK photos, numbered: 1-13 the canyon photoshoot, 14-24 everything
+// else (festival crowds, stages, portraits, the collage).
 const EPK_PHOTOS = Array.from({ length: 24 }, (_, i) => `/burnell-epk-${String(i + 1).padStart(2, "0")}.webp`);
 
-function seededShuffle(arr, seed) {
-  const a = [...arr];
-  let s = seed;
-  const rand = () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-// his two festival-crowd shots (15, 16) lead: the room he draws, first
-const EPK_LEAD = [15, 16].map((n) => EPK_PHOTOS[n - 1]);
-const EPK_GALLERY = [...EPK_LEAD, ...seededShuffle(EPK_PHOTOS.filter((p) => !EPK_LEAD.includes(p)), 42)];
+// The gallery's order, read across the rows (three columns): the canyon
+// photoshoot (1-13) alternates with everything else like a checkerboard,
+// so shoot photos never sit side by side; the two festival crowds lead.
+const GALLERY_ORDER = [15, 12, 16, 2, 17, 6, 18, 9, 14, 3, 22, 11, 24, 5, 19, 7, 21, 1, 20, 10, 23, 4, 8, 13];
+const EPK_GALLERY = GALLERY_ORDER.map((n) => EPK_PHOTOS[n - 1]);
+// three columns, filled across: photo i goes in column i % 3
+const GALLERY_COLUMNS = [0, 1, 2].map((c) => EPK_GALLERY.filter((_, i) => i % 3 === c));
 // each photo full size, to download (public/press: up to 3000px JPGs made
 // from his camera originals, and all of them in one zip)
 const pressPhoto = (src) => `/press/burnell-washburn-press-${src.match(/epk-(\d+)/)[1]}.jpg`;
@@ -342,20 +329,24 @@ export default function EPK() {
               <Download size={13} /> Download all
             </a>
           </div>
-          <div className="columns-3 gap-2 sm:columns-4 lg:columns-3">
-            {EPK_GALLERY.map((src) => (
+          <div className="flex items-start gap-2">
+            {GALLERY_COLUMNS.map((col, c) => (
+              <div key={c} className="flex min-w-0 flex-1 flex-col gap-2">
+            {col.map((src) => (
               <a
                 key={src}
                 href={pressPhoto(src)}
                 download
                 aria-label="Download this photo, full size"
-                className="group relative mb-2 block break-inside-avoid overflow-hidden rounded-lg border border-white/10 bg-black/40"
+                className="group relative block overflow-hidden rounded-lg border border-white/10 bg-black/40"
               >
                 <img src={src} alt={ARTIST_NAME} className="block w-full object-cover" decoding="async" />
                 <span className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white/85 transition-colors group-hover:bg-[var(--sm-gold)] group-hover:text-black">
                   <Download size={12} />
                 </span>
               </a>
+            ))}
+              </div>
             ))}
           </div>
           <p className="font-body mt-2 text-[0.65rem] text-white/35">Tap any photo to download it full size.</p>
