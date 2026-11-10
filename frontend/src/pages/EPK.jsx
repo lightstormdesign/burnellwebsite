@@ -240,7 +240,15 @@ export default function EPK() {
         <Reveal>
           <span className="overline">Electronic Press Kit</span>
           <h1 className="font-display mt-5 text-5xl font-normal text-[var(--sm-text)] sm:text-6xl">{ARTIST_NAME}</h1>
-          <p className="font-accent mt-4 text-base italic text-white/60">{EPK_SUBTITLE}</p>
+          {/* the location starts its own line, after the dash */}
+          <p className="font-accent mt-4 text-base italic text-white/60">
+            {EPK_SUBTITLE.split(/\s+—\s+/).map((part, i, all) => (
+              <span key={i} className="block">
+                {part}
+                {i < all.length - 1 && " —"}
+              </span>
+            ))}
+          </p>
           {/* his music first: songs to play right here, and where to hear the rest */}
           <TrackPlayer tracks={EPK_TRACKS} cover={EPK_COVER} className="mx-auto mt-7 max-w-sm" />
           <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-2">
