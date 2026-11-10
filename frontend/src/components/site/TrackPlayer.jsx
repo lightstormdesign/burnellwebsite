@@ -7,6 +7,7 @@ import { Pause, Play, SkipBack, SkipForward } from "lucide-react";
 // more than 3s in. Each song only downloads its length until it's played,
 // and its stored duration shows before that. (These are his own files, not
 // Spotify's embeds, which play 30-second previews to anyone not logged in.)
+// With a single song there's nothing to skip to: no back / forward, no count.
 const clock = (s) => (Number.isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "0:00");
 
 export const TrackPlayer = ({ tracks, cover, className = "" }) => {
@@ -17,6 +18,7 @@ export const TrackPlayer = ({ tracks, cover, className = "" }) => {
   const [t, setT] = useState(0);
   const [dur, setDur] = useState(tracks[0]?.duration || 0);
   const track = tracks[i];
+  const several = tracks.length > 1;
 
   useEffect(() => {
     const a = audioRef.current;
@@ -29,7 +31,11 @@ export const TrackPlayer = ({ tracks, cover, className = "" }) => {
       if (i < tracks.length - 1) {
         keepPlaying.current = true;
         setI(i + 1);
-      } else setPlaying(false);
+      } else {
+        // the last song finished: back to its start, ready to play again
+        setPlaying(false);
+        a.currentTime = 0;
+      }
     };
     const events = { timeupdate: onTime, loadedmetadata: onMeta, durationchange: onMeta, play: onPlay, pause: onPause, ended: onEnded };
     Object.entries(events).forEach(([e, f]) => a.addEventListener(e, f));
@@ -86,9 +92,11 @@ export const TrackPlayer = ({ tracks, cover, className = "" }) => {
           <span data-testid="track-title" className="font-display block truncate text-[1.02rem] leading-tight text-white">
             {track.title}
           </span>
-          <span className="font-body shrink-0 text-[0.62rem] tabular-nums text-white/40">
-            {i + 1} / {tracks.length}
-          </span>
+          {several && (
+            <span className="font-body shrink-0 text-[0.62rem] tabular-nums text-white/40">
+              {i + 1} / {tracks.length}
+            </span>
+          )}
         </div>
         <div className="mt-1 flex items-center gap-2">
           <div
@@ -109,9 +117,11 @@ export const TrackPlayer = ({ tracks, cover, className = "" }) => {
         </div>
       </div>
       <div className="flex shrink-0 items-center">
-        <button type="button" onClick={() => skip(-1)} aria-label="Previous song" className={side}>
-          <SkipBack size={15} fill="currentColor" />
-        </button>
+        {several && (
+          <button type="button" onClick={() => skip(-1)} aria-label="Previous song" className={side}>
+            <SkipBack size={15} fill="currentColor" />
+          </button>
+        )}
         <button
           type="button"
           onClick={toggle}
@@ -121,9 +131,11 @@ export const TrackPlayer = ({ tracks, cover, className = "" }) => {
         >
           {playing ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" className="ml-0.5" />}
         </button>
-        <button type="button" onClick={() => skip(1)} aria-label="Next song" className={side}>
-          <SkipForward size={15} fill="currentColor" />
-        </button>
+        {several && (
+          <button type="button" onClick={() => skip(1)} aria-label="Next song" className={side}>
+            <SkipForward size={15} fill="currentColor" />
+          </button>
+        )}
       </div>
       <audio ref={audioRef} src={track.src} preload="metadata" />
     </div>
