@@ -100,10 +100,11 @@ export const SPOTIFY_ARTIST_URL = music.spotifyArtistUrl;
 export const STREAMING_LINKS = music.platformLinks;
 
 // The EPK's player: his own songs, each with its length in seconds so it
-// shows before the song loads. PENDING: more songs from Burnell (MP3s);
-// "Beautiful" is the full song the home page already uses.
-export const EPK_TRACKS = [{ title: "Beautiful", src: "/burnell-beautiful.m4a?v=12", duration: 174 }];
-export const EPK_COVER = "/burnell-cd-front-cover.webp";
+// shows before the song loads. One song for now ("I Love My Socks"), so the
+// player shows no skip buttons; add more and they appear.
+export const EPK_TRACKS = [{ title: "I Love My Socks", src: "/burnell-i-love-my-socks.mp3", duration: 205 }];
+// the cover: a square crop from his photoshoot (press photo 12)
+export const EPK_COVER = "/burnell-epk-song-cover.webp";
 
 // A live performance leads the EPK's video spot (YouTube ID), from his own
 // press kit's "Live Performances"; null falls back to the music video.
