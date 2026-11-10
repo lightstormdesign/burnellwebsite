@@ -54,7 +54,9 @@ export const Navbar = () => {
       data-testid="site-navbar"
       className={
         isPortalHero
-          ? `${fadeIn ? "animate-ui-in " : ""}fixed inset-x-0 top-0 z-50`
+          ? // no bar over the portal, except while the menu is open: then the
+            // bar and the menu are one dark panel from the top of the screen
+            `${fadeIn ? "animate-ui-in " : ""}fixed inset-x-0 top-0 z-50${open ? " bg-[#070707]" : ""}`
           : isMobile
             ? "fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black"
             : isHome
@@ -122,7 +124,9 @@ export const Navbar = () => {
       </nav>
 
       {open && (
-        <div data-testid="nav-mobile-menu" className="border-t border-white/10 bg-black/90 backdrop-blur-xl md:hidden">
+        // no background of its own: it carries on the header's, so the bar and
+        // the links read as one panel (and no blur over the moving world)
+        <div data-testid="nav-mobile-menu" className="md:hidden">
           <div className="flex flex-col px-6 pb-4 pt-2">
             {NAV_LINKS.map((l) => (
               <NavLink
