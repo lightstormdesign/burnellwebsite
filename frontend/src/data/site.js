@@ -97,6 +97,53 @@ export const TOUR_INTRO_LINE_1 = tour.introLine1;
 export const TOUR_INTRO_LINE_2 = tour.introLine2;
 
 export const SPOTIFY_ARTIST_URL = music.spotifyArtistUrl;
+
+// ---- EPK additions ----
+// Where to hear him, as small buttons under the EPK's player (the same
+// links as the Music page).
+export const STREAMING_LINKS = music.platformLinks;
+
+// The EPK's player: his own songs, each with its length in seconds so it
+// shows before the song loads. PENDING: more songs from Burnell (MP3s);
+// "Beautiful" is the full song the home page already uses.
+export const EPK_TRACKS = [{ title: "Beautiful", src: "/burnell-beautiful.m4a?v=12", duration: 174 }];
+export const EPK_COVER = "/burnell-cd-front-cover.webp";
+
+// A live performance leads the EPK's video spot (YouTube ID), from his own
+// press kit's "Live Performances"; null falls back to the music video.
+export const EPK_PERFORMANCE_VIDEO = { id: "JamKuIJfNtM", title: "Live at Kilby Court" };
+
+// Quotes from articles and reviews, shown in the EPK's Press section once
+// there's at least one: { quote, source, href? }. PENDING: asked for any.
+export const PRESS_QUOTES = [];
+
+// Stage plot & tech rider. A MOCKUP to confirm with Burnell: his press kit
+// doesn't cover his setup, so this is a typical conscious hip hop set: him
+// on vocals, Native American flute and sound-healing instruments, with
+// backing tracks run from a laptop, and room for a DJ or a guest.
+export const TECH_RIDER = {
+  lineup: "Burnell on vocals, Native American flute & sound-healing instruments, with backing tracks; optional DJ and guest vocalist",
+  setLength: "30–90 minutes",
+  changeover: "15 minutes changeover · 30 minutes soundcheck",
+  inputs: [
+    { ch: 1, source: "Lead vocal", mic: "Shure SM58 or Beta 58 (wireless preferred), straight stand" },
+    { ch: 2, source: "Native American flute", mic: "Shure SM57 or similar, boom stand" },
+    { ch: "3–4", source: "Backing tracks (laptop / DJ)", mic: "Stereo DI, L/R" },
+    { ch: 5, source: "Sound bowls & percussion", mic: "Condenser or SM57, boom stand" },
+    { ch: 6, source: "Guest vocal (when booked)", mic: "Shure SM58, straight stand" },
+  ],
+  monitors: "Two wedges: one at center for Burnell, one at the DJ / laptop table (one more with a guest)",
+  venueProvides: [
+    "PA system and sound engineer",
+    "Vocal mics, stands and DI boxes as listed",
+    "Monitor wedges",
+    "6 ft table upstage center, with power",
+    "Power at center stage",
+    "Water on stage",
+  ],
+  artistBrings: ["Laptop and audio interface", "Native American flutes", "Sound bowls and sound-healing instruments", "Cables for his own gear"],
+};
+
 export const MUSIC_SUBTITLE = music.subtitle;
 export const MUSIC_PLATFORM_LINKS = music.platformLinks;
 export const FEATURED_VIDEO = music.featuredVideo;
