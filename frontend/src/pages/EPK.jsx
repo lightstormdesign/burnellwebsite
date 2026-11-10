@@ -33,7 +33,7 @@ import {
 // so they can be deliberately interleaved below — the previous pass had them
 // clustered as two visually separate blocks (all stage shots, then all
 // candid shots), which read as segmented rather than varied.
-const EPK_PHOTOS = Array.from({ length: 14 }, (_, i) => `/burnell-epk-${String(i + 1).padStart(2, "0")}.webp`);
+const EPK_PHOTOS = Array.from({ length: 24 }, (_, i) => `/burnell-epk-${String(i + 1).padStart(2, "0")}.webp`);
 
 function seededShuffle(arr, seed) {
   const a = [...arr];
@@ -48,7 +48,9 @@ function seededShuffle(arr, seed) {
   }
   return a;
 }
-const EPK_GALLERY = seededShuffle(EPK_PHOTOS, 42);
+// his two festival-crowd shots (15, 16) lead: the room he draws, first
+const EPK_LEAD = [15, 16].map((n) => EPK_PHOTOS[n - 1]);
+const EPK_GALLERY = [...EPK_LEAD, ...seededShuffle(EPK_PHOTOS.filter((p) => !EPK_LEAD.includes(p)), 42)];
 // each photo full size, to download (public/press: up to 3000px JPGs made
 // from his camera originals, and all of them in one zip)
 const pressPhoto = (src) => `/press/burnell-washburn-press-${src.match(/epk-(\d+)/)[1]}.jpg`;
