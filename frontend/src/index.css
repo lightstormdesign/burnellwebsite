@@ -969,3 +969,29 @@ html.intro-playing [data-testid="site-navbar"] { opacity: 0; }
   .deer-aura-rainbow:not(.deer-aura-burst) { animation-name: deer-aura-spin, deer-aura-breathe-phone; }
   @keyframes deer-aura-breathe-phone { 0%, 100% { opacity: 0.55; } 50% { opacity: 0.8; } }
 }
+
+/* EPK background photo (EPK.jsx): very dark, so the page stays readable */
+.epk-bg-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0%;
+  opacity: 0.55;
+}
+.epk-bg-shade {
+  background: linear-gradient(to bottom, rgba(6, 7, 7, 0.35) 0%, rgba(6, 7, 7, 0.6) 30%, rgba(6, 7, 7, 0.88) 62%, rgba(6, 7, 7, 0.94) 100%);
+}
+@media (min-width: 768px) {
+  .epk-bg-photo {
+    left: auto;
+    width: 62vw;
+    object-position: 50% 30%;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 45%);
+    mask-image: linear-gradient(to right, transparent 0%, black 45%);
+  }
+  .epk-bg-shade {
+    background: linear-gradient(to bottom, rgba(6, 7, 7, 0.45) 0%, rgba(6, 7, 7, 0.6) 55%, rgba(6, 7, 7, 0.85) 100%);
+  }
+}
