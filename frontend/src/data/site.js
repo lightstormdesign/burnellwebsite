@@ -110,10 +110,6 @@ export const EPK_TRACKS = [{ title: "I Love My Socks", src: "/burnell-i-love-my-
 // the cover: a square crop from his photoshoot (press photo 12)
 export const EPK_COVER = "/burnell-epk-song-cover.webp";
 
-// A live performance to lead the EPK's video spot ({ id: YouTube ID, title }).
-// None for now (Kilby Court was taken out), so the music video leads.
-export const EPK_PERFORMANCE_VIDEO = null;
-
 // Quotes from articles and reviews, shown in the EPK's Press section once
 // there's at least one: { quote, source, href? }. PENDING: asked for any.
 export const PRESS_QUOTES = [];

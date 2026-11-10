@@ -16,7 +16,6 @@ import {
   NOTABLE_VENUES,
   PRESS_FEATURES,
   PRESS_LINKS,
-  FEATURED_VIDEO,
   BOOKING_STATUS,
   BOOKING_COPY,
   BOOKING_EMAIL,
@@ -24,7 +23,6 @@ import {
   STREAMING_LINKS,
   EPK_TRACKS,
   EPK_COVER,
-  EPK_PERFORMANCE_VIDEO,
   PRESS_QUOTES,
   TECH_RIDER,
 } from "@/data/site";
@@ -55,8 +53,6 @@ const EPK_GALLERY = seededShuffle(EPK_PHOTOS, 42);
 // from his camera originals, and all of them in one zip)
 const pressPhoto = (src) => `/press/burnell-washburn-press-${src.match(/epk-(\d+)/)[1]}.jpg`;
 const PRESS_ZIP = "/press/burnell-washburn-press-photos.zip";
-// a live performance leads the video spot; the music video if there's none
-const LEAD_VIDEO = EPK_PERFORMANCE_VIDEO || FEATURED_VIDEO;
 
 // The stage plot: the stage from above, audience at the bottom. Burnell at
 // center with his flute and bowls; the laptop / DJ table upstage; a guest's
@@ -364,25 +360,10 @@ export default function EPK() {
         </Reveal>
 
         <div className="order-1 text-center lg:order-2 lg:text-left">
-          {/* A live performance leads the info column (his music video if
-              there's none); stats follow beneath it. */}
-          <Reveal delay={0.1}>
-            <div className="overflow-hidden rounded-xl border border-white/10 shadow-[0_40px_140px_-30px_rgba(214,179,101,0.3)]">
-              <iframe
-                data-testid="epk-performance-video"
-                className="aspect-video w-full"
-                src={`https://www.youtube.com/embed/${LEAD_VIDEO.id}`}
-                title={`${ARTIST_NAME} — ${LEAD_VIDEO.title}`}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                loading="lazy"
-              />
-            </div>
-          </Reveal>
-
+          {/* No video here (his videos live on the Music page): the stats
+              lead the info column. */}
           <Reveal delay={0.15}>
-            <div className="mt-10 grid grid-cols-2 gap-8 sm:grid-cols-4 lg:grid-cols-2">
+            <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 lg:grid-cols-2">
               {EPK_STATS.map((s) => (
                 <div key={s.label}>
                   <p className="font-display text-4xl text-[var(--sm-gold-light)]">{s.value}</p>
